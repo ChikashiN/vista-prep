@@ -13,32 +13,63 @@ interface Domain {
   questionCount: number;
 }
 
-const domains: Domain[] = [
+const readingDomains: Domain[] = [
   {
     id: "information-ideas", 
     name: "Information and Ideas",
-    description: "Main ideas, supporting details, and inferences",
+    description: "Central ideas, themes, and supporting details from texts",
     icon: Lightbulb,
     questionCount: 0
   },
   {
     id: "craft-structure",
     name: "Craft and Structure",
-    description: "Author techniques, text structure, and rhetorical purpose",
+    description: "Word choice, text structure, and rhetorical purpose",
     icon: BookOpen,
     questionCount: 0
   },
   {
     id: "expression-ideas",
     name: "Expression of Ideas",
-    description: "Rhetorical synthesis and editing for clarity",
+    description: "Rhetorical synthesis and effective language use",
     icon: PenTool,
     questionCount: 0
   },
   {
     id: "standard-conventions",
     name: "Standard English Conventions", 
-    description: "Grammar, usage, and mechanics",
+    description: "Grammar, usage, punctuation, and sentence structure",
+    icon: Settings,
+    questionCount: 0
+  }
+];
+
+const mathDomains: Domain[] = [
+  {
+    id: "algebra",
+    name: "Algebra",
+    description: "Linear equations, systems, and algebraic expressions",
+    icon: PenTool,
+    questionCount: 0
+  },
+  {
+    id: "advanced-math",
+    name: "Advanced Math",
+    description: "Nonlinear equations, functions, and polynomial operations",
+    icon: BookOpen,
+    questionCount: 0
+  },
+  {
+    id: "problem-solving-data",
+    name: "Problem-Solving and Data Analysis",
+    description: "Statistics, probability, and data interpretation",
+    icon: Lightbulb,
+    questionCount: 0
+  },
+  {
+    id: "geometry-trigonometry",
+    name: "Geometry and Trigonometry",
+    description: "Area, volume, angles, and trigonometric relationships",
     icon: Settings,
     questionCount: 0
   }
@@ -51,6 +82,8 @@ interface DomainSelectorProps {
 }
 
 export function DomainSelector({ selectedDomains, onDomainsChange, sectionType }: DomainSelectorProps) {
+  const domains = sectionType === "reading" ? readingDomains : mathDomains;
+  
   const handleDomainToggle = (domainId: string) => {
     if (selectedDomains.includes(domainId)) {
       onDomainsChange(selectedDomains.filter(id => id !== domainId));
@@ -63,10 +96,10 @@ export function DomainSelector({ selectedDomains, onDomainsChange, sectionType }
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">
-          Customize Your {sectionType === "reading" ? "Reading & Writing" : "Math"} Practice
+          Choose Your {sectionType === "reading" ? "Reading & Writing" : "Math"} Focus Areas
         </h2>
         <p className="text-muted-foreground">
-          Select the SAT {sectionType === "reading" ? "Reading & Writing" : "Math"} content domains you want to practice
+          Just sharpening your skills today? Pick the domains you want to practice
         </p>
       </div>
 

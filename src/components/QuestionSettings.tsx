@@ -118,9 +118,9 @@ export function QuestionSettings({
           <div className="flex items-center gap-3">
             <Timer className="h-4 w-4 text-muted-foreground" />
             <div>
-              <Label className="text-sm font-medium">Focus Mode</Label>
+              <Label className="text-sm font-medium">Timer (Optional)</Label>
               <p className="text-xs text-muted-foreground">
-                {timedMode ? "Timed practice with real SAT timing" : "Practice at your own pace"}
+                {timedMode ? "Practice with time pressure" : "Practice at your own pace - no rush!"}
               </p>
             </div>
           </div>

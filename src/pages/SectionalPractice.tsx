@@ -2,124 +2,178 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { DomainSelector } from "@/components/DomainSelector";
 import { QuestionSettings } from "@/components/QuestionSettings";
+import { TestModeCard } from "@/components/TestModeCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BookOpen, Calculator } from "lucide-react";
+import { ArrowLeft, BookOpen, Calculator, Clock, Target, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type SectionType = "reading" | "math";
+type TestMode = "sectional" | "full-reading" | "full-math" | "full-test";
 
 export default function SectionalPractice() {
   const navigate = useNavigate();
   const [selectedSection, setSelectedSection] = useState<SectionType | null>(null);
+  const [testMode, setTestMode] = useState<TestMode | null>(null);
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard" | "Mixed">("Mixed");
   const [questionCount, setQuestionCount] = useState<5 | 10 | 20>(10);
   const [timedMode, setTimedMode] = useState(false);
 
   const handleStartPractice = () => {
-    // Navigate to practice mode with settings
-    navigate(`/practice/${selectedSection}`, {
-      state: {
-        domains: selectedDomains,
-        difficulty,
-        questionCount,
-        timedMode
-      }
-    });
+    if (testMode === "sectional") {
+      navigate(`/practice/${selectedSection}`, {
+        state: {
+          domains: selectedDomains,
+          difficulty,
+          questionCount,
+          timedMode,
+          mode: "sectional"
+        }
+      });
+    } else {
+      // Handle full test modes
+      navigate(`/practice/full-test`, {
+        state: {
+          mode: testMode,
+          timedMode: true // Full tests are always timed
+        }
+      });
+    }
   };
 
   const handleBackToSections = () => {
     setSelectedSection(null);
+    setTestMode(null);
     setSelectedDomains([]);
   };
 
-  if (!selectedSection) {
+  const handleSectionalPractice = (section: SectionType) => {
+    setSelectedSection(section);
+    setTestMode("sectional");
+  };
+
+  const handleFullTest = (mode: TestMode) => {
+    setTestMode(mode);
+    navigate(`/practice/full-test`, {
+      state: {
+        mode,
+        timedMode: true
+      }
+    });
+  };
+
+  if (!selectedSection && !testMode) {
     return (
       <div className="min-h-screen bg-background">
         <Header streak={5} totalScore={1250} />
         
-        <main className="container mx-auto px-4 py-12 max-w-4xl">
+        <main className="container mx-auto px-4 py-12 max-w-6xl">
           <div className="text-center space-y-6 mb-12">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              Sectional Practice
+              SAT Practice Hub
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Master the Digital SAT with targeted practice sessions. Choose your section and dive into authentic SAT questions.
+              Choose your practice mode: focused skill building or full test simulation
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Reading & Writing Section */}
-            <Card 
-              className="group cursor-pointer bg-gradient-card border-0 shadow-card hover:shadow-glow transition-all duration-300 hover:scale-105"
-              onClick={() => setSelectedSection("reading")}
-            >
-              <CardContent className="p-8 text-center space-y-6">
-                <div className="rounded-2xl bg-gradient-primary p-4 w-16 h-16 mx-auto shadow-soft group-hover:animate-bounce-gentle">
-                  <BookOpen className="h-8 w-8 text-primary-foreground" />
-                </div>
-                
-                <div className="space-y-3">
-                  <h3 className="text-2xl font-bold">Reading & Writing</h3>
-                  <p className="text-muted-foreground">
-                    Practice passages, grammar, and rhetorical skills
-                  </p>
-                </div>
+          {/* Quick Practice Section */}
+          <div className="space-y-8">
+            <div className="text-center space-y-3">
+              <h2 className="text-2xl font-bold">Quick Practice</h2>
+              <p className="text-muted-foreground">Focus on specific skills with customizable practice sets</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <TestModeCard
+                title="Reading & Writing"
+                description="Practice specific domains with custom settings"
+                duration="Flexible"
+                questionCount="5-20 Questions"
+                icon={BookOpen}
+                features={[
+                  "Information and Ideas",
+                  "Craft and Structure", 
+                  "Expression of Ideas",
+                  "Standard English Conventions"
+                ]}
+                onStart={() => handleSectionalPractice("reading")}
+                variant="primary"
+              />
+              
+              <TestModeCard
+                title="Math"
+                description="Target specific math concepts and skills"
+                duration="Flexible"
+                questionCount="5-20 Questions"
+                icon={Calculator}
+                features={[
+                  "Algebra (35%)",
+                  "Advanced Math (35%)",
+                  "Problem-Solving & Data (15%)",
+                  "Geometry & Trigonometry (15%)"
+                ]}
+                onStart={() => handleSectionalPractice("math")}
+                variant="secondary"
+              />
+            </div>
+          </div>
 
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Badge variant="outline">64 Minutes</Badge>
-                  <Badge variant="outline">2 Modules</Badge>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>✓ Craft & Structure</div>
-                  <div>✓ Information & Ideas</div>
-                  <div>✓ Expression of Ideas</div>
-                  <div>✓ Standard Conventions</div>
-                </div>
-
-                <Button className="w-full rounded-xl" size="lg">
-                  Start Reading Practice
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Math Section */}
-            <Card 
-              className="group cursor-pointer bg-gradient-card border-0 shadow-card hover:shadow-glow transition-all duration-300 hover:scale-105"
-              onClick={() => setSelectedSection("math")}
-            >
-              <CardContent className="p-8 text-center space-y-6">
-                <div className="rounded-2xl bg-gradient-secondary p-4 w-16 h-16 mx-auto shadow-soft group-hover:animate-bounce-gentle">
-                  <Calculator className="h-8 w-8 text-secondary-foreground" />
-                </div>
-                
-                <div className="space-y-3">
-                  <h3 className="text-2xl font-bold">Math</h3>
-                  <p className="text-muted-foreground">
-                    Algebra, geometry, and advanced math problems
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Badge variant="outline">70 Minutes</Badge>
-                  <Badge variant="outline">2 Modules</Badge>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>✓ Algebra (35%)</div>
-                  <div>✓ Advanced Math (35%)</div>
-                  <div>✓ Problem Solving (15%)</div>
-                  <div>✓ Geometry & Trig (15%)</div>
-                </div>
-
-                <Button className="w-full rounded-xl" size="lg" variant="secondary">
-                  Start Math Practice
-                </Button>
-              </CardContent>
-            </Card>
+          {/* Full Test Section */}
+          <div className="space-y-8 mt-16">
+            <div className="text-center space-y-3">
+              <h2 className="text-2xl font-bold">Full Test Experience</h2>
+              <p className="text-muted-foreground">Simulate real SAT conditions with adaptive testing and detailed diagnostics</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <TestModeCard
+                title="Reading & Writing Test"
+                description="Complete 64-minute section with adaptive modules"
+                duration="64 Minutes"
+                questionCount="54 Questions"
+                icon={Clock}
+                features={[
+                  "2 Adaptive Modules",
+                  "Real SAT Timing",
+                  "Full Diagnostic Report"
+                ]}
+                onStart={() => handleFullTest("full-reading")}
+                variant="accent"
+              />
+              
+              <TestModeCard
+                title="Math Test"
+                description="Complete 70-minute section with calculator"
+                duration="70 Minutes"
+                questionCount="44 Questions"
+                icon={Target}
+                features={[
+                  "2 Adaptive Modules",
+                  "Built-in Calculator",
+                  "Grid-in Questions"
+                ]}
+                onStart={() => handleFullTest("full-math")}
+                variant="accent"
+              />
+              
+              <TestModeCard
+                title="Full SAT Test"
+                description="Complete digital SAT experience"
+                duration="2h 14m"
+                questionCount="98 Questions"
+                icon={Zap}
+                features={[
+                  "Both Sections",
+                  "10-minute Break",
+                  "Complete Score Report"
+                ]}
+                onStart={() => handleFullTest("full-test")}
+                variant="primary"
+              />
+            </div>
           </div>
         </main>
       </div>
