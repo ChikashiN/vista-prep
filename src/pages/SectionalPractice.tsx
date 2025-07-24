@@ -69,7 +69,6 @@ export default function SectionalPractice() {
                 </div>
 
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Badge variant="outline">54 Questions</Badge>
                   <Badge variant="outline">64 Minutes</Badge>
                   <Badge variant="outline">2 Modules</Badge>
                 </div>
@@ -105,7 +104,6 @@ export default function SectionalPractice() {
                 </div>
 
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Badge variant="outline">44 Questions</Badge>
                   <Badge variant="outline">70 Minutes</Badge>
                   <Badge variant="outline">2 Modules</Badge>
                 </div>
@@ -149,6 +147,7 @@ export default function SectionalPractice() {
             <DomainSelector 
               selectedDomains={selectedDomains}
               onDomainsChange={setSelectedDomains}
+              sectionType={selectedSection}
             />
           </div>
 

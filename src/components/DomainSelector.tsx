@@ -13,43 +13,44 @@ interface Domain {
   questionCount: number;
 }
 
-const readingDomains: Domain[] = [
-  {
-    id: "craft-structure",
-    name: "Craft and Structure",
-    description: "Author techniques, text structure, and rhetorical purpose",
-    icon: BookOpen,
-    questionCount: 14
-  },
+const domains: Domain[] = [
   {
     id: "information-ideas", 
     name: "Information and Ideas",
     description: "Main ideas, supporting details, and inferences",
     icon: Lightbulb,
-    questionCount: 13
+    questionCount: 0
+  },
+  {
+    id: "craft-structure",
+    name: "Craft and Structure",
+    description: "Author techniques, text structure, and rhetorical purpose",
+    icon: BookOpen,
+    questionCount: 0
   },
   {
     id: "expression-ideas",
     name: "Expression of Ideas",
     description: "Rhetorical synthesis and editing for clarity",
     icon: PenTool,
-    questionCount: 10
+    questionCount: 0
   },
   {
     id: "standard-conventions",
     name: "Standard English Conventions", 
     description: "Grammar, usage, and mechanics",
     icon: Settings,
-    questionCount: 11
+    questionCount: 0
   }
 ];
 
 interface DomainSelectorProps {
   selectedDomains: string[];
   onDomainsChange: (domains: string[]) => void;
+  sectionType: "reading" | "math";
 }
 
-export function DomainSelector({ selectedDomains, onDomainsChange }: DomainSelectorProps) {
+export function DomainSelector({ selectedDomains, onDomainsChange, sectionType }: DomainSelectorProps) {
   const handleDomainToggle = (domainId: string) => {
     if (selectedDomains.includes(domainId)) {
       onDomainsChange(selectedDomains.filter(id => id !== domainId));
@@ -61,14 +62,16 @@ export function DomainSelector({ selectedDomains, onDomainsChange }: DomainSelec
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Customize Your Reading Practice</h2>
+        <h2 className="text-2xl font-bold">
+          Customize Your {sectionType === "reading" ? "Reading & Writing" : "Math"} Practice
+        </h2>
         <p className="text-muted-foreground">
-          Select the SAT Reading & Writing content domains you want to practice
+          Select the SAT {sectionType === "reading" ? "Reading & Writing" : "Math"} content domains you want to practice
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {readingDomains.map((domain) => {
+        {domains.map((domain) => {
           const isSelected = selectedDomains.includes(domain.id);
           const Icon = domain.icon;
 
@@ -98,9 +101,6 @@ export function DomainSelector({ selectedDomains, onDomainsChange }: DomainSelec
                       }`} />
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {domain.questionCount} Q's
-                  </Badge>
                 </div>
                 <CardTitle className="text-lg">{domain.name}</CardTitle>
               </CardHeader>

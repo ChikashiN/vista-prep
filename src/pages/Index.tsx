@@ -21,7 +21,7 @@ const Index = () => {
               Master the Digital SAT
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-8 animate-slide-up" style={{animationDelay: '0.1s'}}>
-              Adaptive practice that grows with you. Just like Duolingo, but for SAT prep.
+              Adaptive practice that grows with you. Master the Digital SAT with personalized learning.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up" style={{animationDelay: '0.2s'}}>
               <Button 
@@ -87,7 +87,7 @@ const Index = () => {
               title="Reading & Writing"
               description="Master passages, grammar, and rhetorical analysis with targeted practice"
               icon={BookOpen}
-              questionsCount={54}
+              questionsCount={0}
               timeEstimate="32 min per module"
               difficulty="Medium"
               progress={65}
@@ -97,7 +97,7 @@ const Index = () => {
               title="Math"
               description="Algebra, geometry, and advanced math problems with step-by-step solutions"
               icon={Calculator}
-              questionsCount={44}
+              questionsCount={0}
               timeEstimate="35 min per module"
               difficulty="Hard"
               progress={45}

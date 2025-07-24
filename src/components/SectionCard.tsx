@@ -49,8 +49,7 @@ export function SectionCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">{questionsCount} questions</span>
+        <div className="flex items-center justify-center text-sm">
           <span className="text-muted-foreground">{timeEstimate}</span>
         </div>
         

@@ -18,27 +18,27 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 224 20% 15%;
 
-    /* Duolingo-inspired brand colors */
-    --primary: 142 85% 45%; /* Fresh green */
+    /* Softer brand colors */
+    --primary: 142 60% 50%; /* Softer green */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 142 85% 65%;
+    --primary-glow: 142 60% 70%;
 
-    --secondary: 218 85% 68%; /* Soft blue */
+    --secondary: 218 60% 65%; /* Softer blue */
     --secondary-foreground: 0 0% 100%;
 
-    --accent: 267 85% 78%; /* Gentle purple */
+    --accent: 267 60% 75%; /* Softer purple */
     --accent-foreground: 0 0% 100%;
 
-    --success: 142 85% 45%;
+    --success: 142 60% 50%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 43 96% 56%;
+    --warning: 43 70% 60%;
     --warning-foreground: 0 0% 100%;
 
     --muted: 218 25% 96%;
     --muted-foreground: 224 15% 55%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 60% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 218 25% 90%;

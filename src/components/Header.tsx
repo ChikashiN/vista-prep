@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, Flame, Trophy } from "lucide-react";
+import { Target, Flame, Trophy, Home } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface HeaderProps {
   streak?: number;
@@ -8,20 +9,49 @@ interface HeaderProps {
 }
 
 export function Header({ streak = 0, totalScore = 0 }: HeaderProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-gradient-primary p-2 shadow-soft">
-            <Target className="h-6 w-6 text-primary-foreground" />
+        {/* Logo and Navigation */}
+        <div className="flex items-center gap-6">
+          <div 
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate('/')}
+          >
+            <div className="rounded-xl bg-gradient-primary p-2 shadow-soft">
+              <Target className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                SAT Prep Pro
+              </h1>
+              <p className="text-xs text-muted-foreground">Reading & Math</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              SAT Prep Pro
-            </h1>
-            <p className="text-xs text-muted-foreground">Reading & Math</p>
-          </div>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center space-x-2">
+            <Button 
+              variant={location.pathname === '/' ? 'default' : 'ghost'} 
+              size="sm" 
+              onClick={() => navigate('/')}
+              className="rounded-lg"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Home
+            </Button>
+            <Button 
+              variant={location.pathname === '/sectional-practice' ? 'default' : 'ghost'} 
+              size="sm"
+              onClick={() => navigate('/sectional-practice')}
+              className="rounded-lg"
+            >
+              Practice
+            </Button>
+          </nav>
         </div>
 
         {/* User Stats */}
