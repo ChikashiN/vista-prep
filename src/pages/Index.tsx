@@ -34,7 +34,7 @@ const Index = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-white text-white hover:bg-white hover:text-primary rounded-xl text-lg px-8 py-4"
+                className="bg-white text-primary border-white hover:bg-primary hover:text-white rounded-xl text-lg px-8 py-4"
               >
                 Take Full Practice Test
               </Button>
