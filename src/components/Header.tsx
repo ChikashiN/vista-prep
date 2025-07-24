@@ -2,13 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Target, Flame, Trophy, Home } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { XPTracker } from "./XPTracker";
 
 interface HeaderProps {
   streak?: number;
   totalScore?: number;
+  currentXP?: number;
+  level?: number;
 }
 
-export function Header({ streak = 0, totalScore = 0 }: HeaderProps) {
+export function Header({ streak = 0, totalScore = 0, currentXP = 250, level = 3 }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -56,21 +59,23 @@ export function Header({ streak = 0, totalScore = 0 }: HeaderProps) {
 
         {/* User Stats */}
         <div className="flex items-center gap-4">
-          {/* Streak Counter */}
-          <div className="flex items-center gap-2 rounded-xl bg-gradient-card p-2 shadow-soft">
-            <Flame className="h-4 w-4 text-streak-gold" />
-            <span className="text-sm font-medium">{streak}</span>
-            <Badge variant="outline" className="text-xs">
-              Day streak
-            </Badge>
+          {/* XP Tracker - hidden on mobile */}
+          <div className="hidden md:block">
+            <XPTracker 
+              currentXP={currentXP}
+              streak={streak}
+              level={level}
+              xpToNextLevel={100 - (currentXP % 100)}
+            />
           </div>
 
-          {/* Total Score */}
-          <div className="flex items-center gap-2 rounded-xl bg-gradient-card p-2 shadow-soft">
-            <Trophy className="h-4 w-4 text-badge-gold" />
-            <span className="text-sm font-medium">{totalScore}</span>
-            <Badge variant="outline" className="text-xs">
-              Total XP
+          {/* Mobile - simple stats */}
+          <div className="md:hidden flex items-center gap-2">
+            <Badge variant="outline" className="px-2 py-1">
+              🔥 {streak}
+            </Badge>
+            <Badge variant="outline" className="px-2 py-1">
+              L{level}
             </Badge>
           </div>
 

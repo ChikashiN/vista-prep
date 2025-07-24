@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { Header } from "@/components/Header";
+import { DiagnosticReport } from "@/components/DiagnosticReport";
+import { AITutorChat } from "@/components/AITutorChat";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle } from "lucide-react";
 
 interface Question {
   id: number;
@@ -60,6 +63,7 @@ export default function Practice() {
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState(settings.timedMode ? 1920 : null); // 32 minutes in seconds
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showAITutor, setShowAITutor] = useState(false);
 
   // Initialize answers array
   useEffect(() => {
@@ -179,6 +183,8 @@ export default function Practice() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header streak={5} totalScore={1250} currentXP={250} level={3} />
+      
       {/* Header with progress and timer */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-4">
@@ -241,6 +247,17 @@ export default function Practice() {
                     >
                       <Flag className="h-4 w-4" />
                     </Button>
+                    
+                    {/* AI Tutor Button - only for sectional practice */}
+                    {settings.mode === 'sectional' && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowAITutor(true)}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -305,6 +322,15 @@ export default function Practice() {
             </div>
           </div>
         </div>
+        
+        {/* AI Tutor Chat */}
+        {showAITutor && (
+          <AITutorChat 
+            currentQuestion={currentQ.question}
+            currentChoices={currentQ.choices}
+            onClose={() => setShowAITutor(false)}
+          />
+        )}
       </div>
     </div>
   );

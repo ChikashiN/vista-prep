@@ -79,9 +79,10 @@ interface DomainSelectorProps {
   selectedDomains: string[];
   onDomainsChange: (domains: string[]) => void;
   sectionType: "reading" | "math";
+  questionCount?: number;
 }
 
-export function DomainSelector({ selectedDomains, onDomainsChange, sectionType }: DomainSelectorProps) {
+export function DomainSelector({ selectedDomains, onDomainsChange, sectionType, questionCount }: DomainSelectorProps) {
   const domains = sectionType === "reading" ? readingDomains : mathDomains;
   
   const handleDomainToggle = (domainId: string) => {
@@ -101,6 +102,18 @@ export function DomainSelector({ selectedDomains, onDomainsChange, sectionType }
         <p className="text-muted-foreground">
           Just sharpening your skills today? Pick the domains you want to practice
         </p>
+        {selectedDomains.length > 0 && questionCount && (
+          <div className="mt-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <p className="text-sm text-primary font-medium">
+              📊 Question Distribution: {selectedDomains.length === 1 
+                ? `All ${questionCount} questions from ${domains.find(d => d.id === selectedDomains[0])?.name}`
+                : selectedDomains.length === 2
+                ? `${Math.floor(questionCount/2)} questions from each domain`
+                : `Approximately ${Math.floor(questionCount/selectedDomains.length)}–${Math.ceil(questionCount/selectedDomains.length)} questions per domain`
+              }
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

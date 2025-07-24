@@ -67,7 +67,7 @@ export default function SectionalPractice() {
   if (!selectedSection && !testMode) {
     return (
       <div className="min-h-screen bg-background">
-        <Header streak={5} totalScore={1250} />
+        <Header streak={5} totalScore={1250} currentXP={250} level={3} />
         
         <main className="container mx-auto px-4 py-12 max-w-6xl">
           <div className="text-center space-y-6 mb-12">
@@ -110,10 +110,10 @@ export default function SectionalPractice() {
                 questionCount="5-20 Questions"
                 icon={Calculator}
                 features={[
-                  "Algebra (35%)",
-                  "Advanced Math (35%)",
-                  "Problem-Solving & Data (15%)",
-                  "Geometry & Trigonometry (15%)"
+                  "Algebra",
+                  "Advanced Math",
+                  "Problem-Solving & Data Analysis",
+                  "Geometry & Trigonometry"
                 ]}
                 onStart={() => handleSectionalPractice("math")}
                 variant="secondary"
@@ -131,13 +131,13 @@ export default function SectionalPractice() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <TestModeCard
                 title="Reading & Writing Test"
-                description="Complete 64-minute section with adaptive modules"
+                description="2 modules × 27 questions with adaptive difficulty"
                 duration="64 Minutes"
                 questionCount="54 Questions"
                 icon={Clock}
                 features={[
-                  "2 Adaptive Modules",
-                  "Real SAT Timing",
+                  "Module 1: 32 minutes",
+                  "Module 2: 32 minutes (adaptive)",
                   "Full Diagnostic Report"
                 ]}
                 onStart={() => handleFullTest("full-reading")}
@@ -146,14 +146,14 @@ export default function SectionalPractice() {
               
               <TestModeCard
                 title="Math Test"
-                description="Complete 70-minute section with calculator"
+                description="2 modules × 22 questions with built-in calculator"
                 duration="70 Minutes"
                 questionCount="44 Questions"
                 icon={Target}
                 features={[
-                  "2 Adaptive Modules",
-                  "Built-in Calculator",
-                  "Grid-in Questions"
+                  "Module 1: 35 minutes",
+                  "Module 2: 35 minutes (adaptive)",
+                  "75% MC, 25% Grid-in"
                 ]}
                 onStart={() => handleFullTest("full-math")}
                 variant="accent"
@@ -161,12 +161,12 @@ export default function SectionalPractice() {
               
               <TestModeCard
                 title="Full SAT Test"
-                description="Complete digital SAT experience"
+                description="Complete digital SAT with authentic timing"
                 duration="2h 14m"
                 questionCount="98 Questions"
                 icon={Zap}
                 features={[
-                  "Both Sections",
+                  "Reading & Writing + Math",
                   "10-minute Break",
                   "Complete Score Report"
                 ]}
@@ -182,7 +182,7 @@ export default function SectionalPractice() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header streak={5} totalScore={1250} />
+      <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Back Button */}
@@ -202,6 +202,7 @@ export default function SectionalPractice() {
               selectedDomains={selectedDomains}
               onDomainsChange={setSelectedDomains}
               sectionType={selectedSection}
+              questionCount={questionCount}
             />
           </div>
 

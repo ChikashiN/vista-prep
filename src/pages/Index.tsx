@@ -11,7 +11,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header streak={5} totalScore={1250} />
+      <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-hero">
