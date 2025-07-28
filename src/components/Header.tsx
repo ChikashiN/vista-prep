@@ -24,13 +24,11 @@ export function Header({ streak = 0, totalScore = 0, currentXP = 250, level = 3 
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => navigate('/')}
           >
-            <div className="rounded-xl bg-white p-2 shadow-soft">
-              <img 
-                src="/lovable-uploads/0157cd31-b39f-4ed3-99cd-26eaa7d3d61d.png" 
-                alt="Infini Prep Logo" 
-                className="h-6 w-6"
-              />
-            </div>
+            <img 
+              src="/lovable-uploads/0157cd31-b39f-4ed3-99cd-26eaa7d3d61d.png" 
+              alt="Infini Prep Logo" 
+              className="h-10 w-10"
+            />
             <div>
             <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Infini Prep
