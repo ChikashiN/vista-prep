@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Lightbulb, PenTool, Settings } from "lucide-react";
+import { BookOpen, Lightbulb, PenTool, Settings, Layers, Link, Target, FileText, BarChart, Brain, ArrowRight, Minus, CheckCircle } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
 interface Domain {
@@ -15,32 +15,81 @@ interface Domain {
 
 const readingDomains: Domain[] = [
   {
-    id: "information-ideas", 
-    name: "Information and Ideas",
-    description: "Central ideas, themes, and supporting details from texts",
-    icon: Lightbulb,
-    questionCount: 0
-  },
-  {
-    id: "craft-structure",
-    name: "Craft and Structure",
-    description: "Word choice, text structure, and rhetorical purpose",
+    id: "craft-structure-words",
+    name: "Craft & Structure: Words in Context", 
+    description: "Understanding words and phrases in context",
     icon: BookOpen,
-    questionCount: 0
+    questionCount: 5
   },
   {
-    id: "expression-ideas",
-    name: "Expression of Ideas",
-    description: "Rhetorical synthesis and effective language use",
+    id: "craft-structure-text",
+    name: "Craft & Structure: Text Structure & Purpose",
+    description: "Analyzing text structure and author's purpose", 
+    icon: Layers,
+    questionCount: 1
+  },
+  {
+    id: "craft-structure-connections",
+    name: "Craft & Structure: Cross-Text Connections",
+    description: "Making connections between paired texts",
+    icon: Link,
+    questionCount: 1
+  },
+  {
+    id: "information-central",
+    name: "Information & Ideas: Central Ideas & Details",
+    description: "Identifying main ideas and supporting details",
+    icon: Target,
+    questionCount: 2
+  },
+  {
+    id: "information-evidence-textual", 
+    name: "Information & Ideas: Command of Evidence (Textual)",
+    description: "Using textual evidence to support conclusions",
+    icon: FileText,
+    questionCount: 2
+  },
+  {
+    id: "information-evidence-quantitative",
+    name: "Information & Ideas: Command of Evidence (Quantitative)", 
+    description: "Analyzing data and quantitative information",
+    icon: BarChart,
+    questionCount: 1
+  },
+  {
+    id: "information-inferences",
+    name: "Information & Ideas: Inferences",
+    description: "Drawing logical conclusions from text",
+    icon: Brain,
+    questionCount: 2
+  },
+  {
+    id: "expression-transitions",
+    name: "Expression of Ideas: Transitions",
+    description: "Logical flow and connections between ideas", 
+    icon: ArrowRight,
+    questionCount: 3
+  },
+  {
+    id: "expression-synthesis",
+    name: "Expression of Ideas: Rhetorical Synthesis",
+    description: "Combining information for rhetorical purpose",
     icon: PenTool,
-    questionCount: 0
+    questionCount: 2
   },
   {
-    id: "standard-conventions",
-    name: "Standard English Conventions", 
-    description: "Grammar, usage, punctuation, and sentence structure",
-    icon: Settings,
-    questionCount: 0
+    id: "conventions-boundaries",
+    name: "Standard English Conventions: Boundaries",
+    description: "Sentence boundaries and punctuation",
+    icon: Minus,
+    questionCount: 5
+  },
+  {
+    id: "conventions-form",
+    name: "Standard English Conventions: Form, Structure, and Sense",
+    description: "Grammar, usage, and sentence structure",
+    icon: CheckCircle,
+    questionCount: 3
   }
 ];
 
@@ -107,11 +156,26 @@ export function DomainSelector({ selectedDomains, onDomainsChange, sectionType, 
             <p className="text-sm text-primary font-medium">
               📊 Question Distribution: {selectedDomains.length === 1 
                 ? `All ${questionCount} questions from ${domains.find(d => d.id === selectedDomains[0])?.name}`
+                : sectionType === "reading" && questionCount === 27
+                ? "SAT Module Distribution (27 questions total)"
                 : selectedDomains.length === 2
                 ? `${Math.floor(questionCount/2)} questions from each domain`
                 : `Approximately ${Math.floor(questionCount/selectedDomains.length)}–${Math.ceil(questionCount/selectedDomains.length)} questions per domain`
               }
             </p>
+            {sectionType === "reading" && questionCount === 27 && selectedDomains.length > 1 && (
+              <div className="mt-2 text-xs text-primary/80">
+                {selectedDomains.map(domainId => {
+                  const domain = domains.find(d => d.id === domainId);
+                  return domain && (
+                    <div key={domainId} className="flex justify-between">
+                      <span>{domain.name.split(': ')[1] || domain.name}</span>
+                      <span>{domain.questionCount} questions</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
