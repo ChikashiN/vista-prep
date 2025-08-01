@@ -121,59 +121,21 @@ export default function SectionalPractice() {
             </div>
           </div>
 
-          {/* Full Test Section */}
-          <div className="space-y-8 mt-16">
-            <div className="text-center space-y-3">
-              <h2 className="text-2xl font-bold">Full Test Experience</h2>
-              <p className="text-muted-foreground">Simulate real SAT conditions with adaptive testing and detailed diagnostics</p>
+          {/* Quick Access to Full Test */}
+          <div className="space-y-8 mt-16 text-center">
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold">Ready for a Full Test?</h2>
+              <p className="text-muted-foreground">Take a complete adaptive SAT experience</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <TestModeCard
-                title="Reading & Writing Test"
-                description="2 modules × 27 questions with adaptive difficulty"
-                duration="64 Minutes"
-                questionCount="54 Questions"
-                icon={Clock}
-                features={[
-                  "Module 1: 32 minutes",
-                  "Module 2: 32 minutes (adaptive)",
-                  "Full Diagnostic Report"
-                ]}
-                onStart={() => handleFullTest("full-reading")}
-                variant="accent"
-              />
-              
-              <TestModeCard
-                title="Math Test"
-                description="2 modules × 22 questions with built-in calculator"
-                duration="70 Minutes"
-                questionCount="44 Questions"
-                icon={Target}
-                features={[
-                  "Module 1: 35 minutes",
-                  "Module 2: 35 minutes (adaptive)",
-                  "75% MC, 25% Grid-in"
-                ]}
-                onStart={() => handleFullTest("full-math")}
-                variant="accent"
-              />
-              
-              <TestModeCard
-                title="Full SAT Test"
-                description="Complete digital SAT with authentic timing"
-                duration="2h 14m"
-                questionCount="98 Questions"
-                icon={Zap}
-                features={[
-                  "Reading & Writing + Math",
-                  "10-minute Break",
-                  "Complete Score Report"
-                ]}
-                onStart={() => handleFullTest("full-test")}
-                variant="primary"
-              />
-            </div>
+            <Button 
+              onClick={() => navigate('/test')}
+              variant="default"
+              size="lg"
+              className="rounded-xl bg-gradient-primary shadow-glow px-8 py-3"
+            >
+              🧪 Full Test Experience
+            </Button>
           </div>
         </main>
       </div>

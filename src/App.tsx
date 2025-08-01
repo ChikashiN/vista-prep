@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Practice from "./pages/Practice";
 import SectionalPractice from "./pages/SectionalPractice";
+import FullTest from "./pages/FullTest";
+import TestModeSelector from "./pages/TestModeSelector";
+import { DiagnosticsView } from "./components/DiagnosticsView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,7 +24,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/practice" element={<SectionalPractice />} />
           <Route path="/practice/:section" element={<Practice />} />
-          <Route path="/test" element={<SectionalPractice />} />
+          <Route path="/test" element={<TestModeSelector />} />
+          <Route path="/full-test" element={<FullTest />} />
+          <Route path="/diagnostics" element={<DiagnosticsView questions={[]} onRetryIncorrect={() => {}} onMorePractice={() => {}} />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

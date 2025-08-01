@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { DiagnosticReport } from "@/components/DiagnosticReport";
-import { AITutorChat } from "@/components/AITutorChat";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen } from "lucide-react";
 
 interface Question {
   id: number;
@@ -17,69 +15,101 @@ interface Question {
   correctAnswer: number;
   domain: string;
   difficulty: string;
+  section: "reading" | "math";
 }
 
-// Sample questions for demo
 const sampleQuestions: Question[] = [
   {
     id: 1,
-    passage: "The Renaissance period marked a significant shift in European art and culture. Artists began to focus more on realistic portrayals of human figures and natural landscapes, moving away from the stylized representations common in medieval art.",
+    passage: "The Renaissance period marked a significant shift in European art and culture. Artists began to focus more on realistic portrayals of human figures and natural landscapes.",
     question: "Based on the passage, the Renaissance period was characterized by:",
-    choices: [
-      "A continuation of medieval artistic traditions",
-      "A shift toward more realistic artistic representations", 
-      "A focus solely on religious themes",
-      "A decline in artistic innovation"
-    ],
+    choices: ["A continuation of medieval artistic traditions", "A shift toward more realistic artistic representations", "A focus solely on religious themes", "A decline in artistic innovation"],
     correctAnswer: 1,
     domain: "information-ideas",
-    difficulty: "Medium"
+    difficulty: "Medium",
+    section: "reading"
   },
   {
     id: 2,
-    question: "Which choice completes the text with the most logical and precise word or phrase?",
-    passage: "The scientist's research was so _______ that it challenged fundamental assumptions about climate change that had been accepted for decades.",
-    choices: [
-      "mundane",
-      "groundbreaking",
-      "superficial", 
-      "conventional"
-    ],
+    question: "If 3x + 5 = 17, what is the value of x?",
+    choices: ["2", "4", "6", "8"],
     correctAnswer: 1,
-    domain: "craft-structure",
-    difficulty: "Easy"
+    domain: "algebra",
+    difficulty: "Easy",
+    section: "math"
   }
 ];
 
-export default function Practice() {
-  const { section } = useParams();
+export default function FullTest() {
   const location = useLocation();
   const navigate = useNavigate();
-  
   const settings = location.state || {};
+  
+  const [currentModule, setCurrentModule] = useState(1);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
-  const [timeElapsed, setTimeElapsed] = useState(0); // Count up from 0 for sectional practice
+  const [timeLeft, setTimeLeft] = useState(32 * 60); // 32 minutes in seconds
+  const [showBreak, setShowBreak] = useState(false);
+  const [breakTimeLeft, setBreakTimeLeft] = useState(10 * 60); // 10 minutes
   const [isCompleted, setIsCompleted] = useState(false);
-  const [showAITutor, setShowAITutor] = useState(false);
+  const [currentSection, setCurrentSection] = useState<"reading" | "math">("reading");
+
+  const getModuleQuestions = () => {
+    if (settings.mode === "full-reading") {
+      return 27; // 27 questions per module for Reading & Writing
+    } else if (settings.mode === "full-math") {
+      return 22; // 22 questions per module for Math
+    } else {
+      return currentSection === "reading" ? 27 : 22;
+    }
+  };
+
+  const getModuleTime = () => {
+    if (currentSection === "reading") {
+      return 32 * 60; // 32 minutes
+    } else {
+      return 35 * 60; // 35 minutes
+    }
+  };
 
   // Initialize answers array
   useEffect(() => {
-    setAnswers(new Array(settings.questionCount || 10).fill(null));
-  }, [settings.questionCount]);
+    setAnswers(new Array(getModuleQuestions()).fill(null));
+  }, [currentModule, currentSection, settings.mode]);
 
-  // Timer effect - count up for sectional practice
+  // Timer effect
   useEffect(() => {
-    if (isCompleted) return;
+    if (timeLeft <= 0 || isCompleted) {
+      handleModuleComplete();
+      return;
+    }
 
     const timer = setInterval(() => {
-      setTimeElapsed(time => time + 1);
+      setTimeLeft(time => time - 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isCompleted]);
+  }, [timeLeft, isCompleted]);
+
+  // Break timer effect
+  useEffect(() => {
+    if (!showBreak || breakTimeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setBreakTimeLeft(time => {
+        if (time <= 1) {
+          setShowBreak(false);
+          startNextSection();
+          return 0;
+        }
+        return time - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [showBreak, breakTimeLeft]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -95,7 +125,7 @@ export default function Practice() {
   };
 
   const handleNext = () => {
-    if (currentQuestion < (settings.questionCount || 10) - 1) {
+    if (currentQuestion < getModuleQuestions() - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(answers[currentQuestion + 1]);
     }
@@ -118,96 +148,100 @@ export default function Practice() {
     setFlagged(newFlagged);
   };
 
-  const handleSubmit = () => {
-    setIsCompleted(true);
+  const handleModuleComplete = () => {
+    if (currentModule === 1) {
+      // Start Module 2
+      setCurrentModule(2);
+      setCurrentQuestion(0);
+      setSelectedAnswer(null);
+      setAnswers(new Array(getModuleQuestions()).fill(null));
+      setFlagged(new Set());
+      setTimeLeft(getModuleTime());
+    } else if (currentSection === "reading" && (settings.mode === "full-test" || settings.mode === "full-reading")) {
+      if (settings.mode === "full-test") {
+        // Show break option
+        setShowBreak(true);
+        setBreakTimeLeft(10 * 60);
+      } else {
+        setIsCompleted(true);
+      }
+    } else {
+      setIsCompleted(true);
+    }
+  };
+
+  const startNextSection = () => {
+    setCurrentSection("math");
+    setCurrentModule(1);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setAnswers(new Array(22).fill(null)); // Math has 22 questions
+    setFlagged(new Set());
+    setTimeLeft(35 * 60); // Math modules are 35 minutes
+  };
+
+  const handleSkipBreak = () => {
+    setShowBreak(false);
+    startNextSection();
   };
 
   const currentQ = sampleQuestions[currentQuestion % sampleQuestions.length];
-  const progress = ((currentQuestion + 1) / (settings.questionCount || 10)) * 100;
+  const progress = ((currentQuestion + 1) / getModuleQuestions()) * 100;
   const answeredCount = answers.filter(a => a !== null).length;
+
+  if (showBreak) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-gradient-card shadow-glow">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Break Time</CardTitle>
+            <p className="text-muted-foreground">Take a well-deserved break before Math</p>
+          </CardHeader>
+          <CardContent className="space-y-6 text-center">
+            <div className="text-4xl font-bold text-primary">{formatTime(breakTimeLeft)}</div>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Your break will automatically end when the timer reaches 0.
+              </p>
+              <Button onClick={handleSkipBreak} variant="outline" className="rounded-xl">
+                Skip Break & Continue to Math
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isCompleted) {
     const score = answers.filter((answer, index) => {
       const q = sampleQuestions[index % sampleQuestions.length];
       return answer === q.correctAnswer;
     }).length;
-    const percentage = Math.round((score / (settings.questionCount || 10)) * 100);
+    const percentage = Math.round((score / getModuleQuestions()) * 100);
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl bg-gradient-card shadow-glow">
           <CardHeader className="text-center">
-            <div className="rounded-2xl bg-gradient-primary p-4 w-16 h-16 mx-auto mb-4">
-              <RotateCcw className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <CardTitle className="text-2xl">Practice Complete!</CardTitle>
+            <CardTitle className="text-2xl">Test Complete!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 text-center">
             <div className="space-y-4">
               <div className="text-4xl font-bold text-primary">{percentage}%</div>
               <div className="text-muted-foreground">
-                {score} out of {settings.questionCount || 10} correct
+                {score} out of {getModuleQuestions()} correct
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button 
-                variant="outline" 
-                className="rounded-xl"
-                onClick={() => {
-                  // Handle retry incorrect questions
-                  const incorrectQuestions = answers.map((answer, index) => {
-                    const q = sampleQuestions[index % sampleQuestions.length];
-                    return answer !== q.correctAnswer ? index : null;
-                  }).filter(i => i !== null);
-                  
-                  if (incorrectQuestions.length > 0) {
-                    navigate(`/practice/${section}`, {
-                      state: {
-                        ...settings,
-                        questionCount: incorrectQuestions.length,
-                        retryMode: true
-                      }
-                    });
-                  }
-                }}
-              >
-                🔁 Retry Incorrect
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button variant="outline" className="rounded-xl" onClick={() => navigate('/dashboard')}>
+                🏠 Return to Dashboard
               </Button>
-              <Button 
-                variant="outline" 
-                className="rounded-xl"
-                onClick={() => {
-                  // Navigate to diagnostics view with sample data
-                  const diagnosticQuestions = answers.map((answer, index) => {
-                    const q = sampleQuestions[index % sampleQuestions.length];
-                    return {
-                      ...q,
-                      userAnswer: answer,
-                      explanation: "This is a sample explanation. The correct answer demonstrates the concept being tested in this question type."
-                    };
-                  });
-                  navigate('/diagnostics', { state: { questions: diagnosticQuestions } });
-                }}
-              >
-                📈 View Diagnostics
-              </Button>
-              <Button 
-                variant="default" 
-                className="rounded-xl"
-                onClick={() => navigate('/practice')}
-              >
-                ➕ More Practice
+              <Button variant="default" className="rounded-xl" onClick={() => navigate('/test')}>
+                📈 View Full Diagnostics
               </Button>
             </div>
-
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/dashboard')}
-              className="w-full rounded-xl"
-            >
-              Return to Home
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -222,22 +256,21 @@ export default function Practice() {
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-muted-foreground">
-              {section === 'reading' ? 'Reading & Writing' : 'Math'} Practice
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              {currentSection === "reading" ? <BookOpen className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}
+              {currentSection === "reading" ? "Reading & Writing" : "Math"} - Module {currentModule}
             </div>
-            {settings.timedMode && (
-              <div className="flex items-center gap-2 text-sm">
-                <Timer className="h-4 w-4" />
-                <span>
-                  {formatTime(timeElapsed)}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-sm">
+              <Timer className="h-4 w-4" />
+              <span className={timeLeft < 300 ? "text-destructive font-bold" : ""}>
+                {formatTime(timeLeft)}
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">
-              Question {currentQuestion + 1} of {settings.questionCount || 10}
+              Question {currentQuestion + 1} of {getModuleQuestions()}
             </span>
             <span className="text-sm text-muted-foreground">
               {answeredCount} answered
@@ -280,17 +313,6 @@ export default function Practice() {
                     >
                       <Flag className="h-4 w-4" />
                     </Button>
-                    
-                    {/* AI Tutor Button - only for sectional practice */}
-                    {settings.mode === 'sectional' && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setShowAITutor(true)}
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -335,12 +357,12 @@ export default function Practice() {
                 Previous
               </Button>
 
-              {currentQuestion === (settings.questionCount || 10) - 1 ? (
+              {currentQuestion === getModuleQuestions() - 1 ? (
                 <Button
-                  onClick={handleSubmit}
+                  onClick={handleModuleComplete}
                   className="rounded-xl bg-gradient-primary shadow-glow"
                 >
-                  Submit Practice
+                  {currentModule === 1 ? "Complete Module 1" : "Submit Test"}
                 </Button>
               ) : (
                 <Button
@@ -355,15 +377,6 @@ export default function Practice() {
             </div>
           </div>
         </div>
-        
-        {/* AI Tutor Chat */}
-        {showAITutor && (
-          <AITutorChat 
-            currentQuestion={currentQ.question}
-            currentChoices={currentQ.choices}
-            onClose={() => setShowAITutor(false)}
-          />
-        )}
       </div>
     </div>
   );

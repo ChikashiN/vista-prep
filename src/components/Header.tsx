@@ -42,21 +42,29 @@ export function Header({ streak = 0, totalScore = 0, currentXP = 250, level = 3 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-2">
             <Button 
-              variant={location.pathname === '/' ? 'default' : 'ghost'} 
+              variant={location.pathname === '/' || location.pathname === '/dashboard' ? 'default' : 'ghost'} 
               size="sm" 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
               className="rounded-lg"
             >
               <Home className="h-4 w-4 mr-2" />
-              Home
+              Dashboard
             </Button>
             <Button 
-              variant={location.pathname === '/sectional-practice' ? 'default' : 'ghost'} 
+              variant={location.pathname === '/practice' ? 'default' : 'ghost'} 
               size="sm"
-              onClick={() => navigate('/sectional-practice')}
+              onClick={() => navigate('/practice')}
               className="rounded-lg"
             >
-              Practice
+              📘 Sectional Practice
+            </Button>
+            <Button 
+              variant={location.pathname === '/test' ? 'default' : 'ghost'} 
+              size="sm"
+              onClick={() => navigate('/test')}
+              className="rounded-lg"
+            >
+              🧪 Full Test
             </Button>
           </nav>
         </div>
