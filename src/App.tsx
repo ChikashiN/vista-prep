@@ -8,7 +8,7 @@ import Practice from "./pages/Practice";
 import SectionalPractice from "./pages/SectionalPractice";
 import FullTest from "./pages/FullTest";
 import TestModeSelector from "./pages/TestModeSelector";
-import { DiagnosticsView } from "./components/DiagnosticsView";
+import Diagnostics from "./pages/Diagnostics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,7 +26,7 @@ const App = () => (
           <Route path="/practice/:section" element={<Practice />} />
           <Route path="/test" element={<TestModeSelector />} />
           <Route path="/full-test" element={<FullTest />} />
-          <Route path="/diagnostics" element={<DiagnosticsView questions={[]} onRetryIncorrect={() => {}} onMorePractice={() => {}} />} />
+          <Route path="/diagnostics" element={<Diagnostics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -16,11 +16,11 @@ interface Question {
 
 interface DiagnosticsViewProps {
   questions: Question[];
-  onRetryIncorrect: () => void;
+  onRetryIncorrected: () => void;
   onMorePractice: () => void;
 }
 
-export function DiagnosticsView({ questions, onRetryIncorrect, onMorePractice }: DiagnosticsViewProps) {
+export function DiagnosticsView({ questions, onRetryIncorrected, onMorePractice }: DiagnosticsViewProps) {
   const navigate = useNavigate();
   
   const correctCount = questions.filter(q => q.userAnswer === q.correctAnswer).length;
@@ -121,7 +121,7 @@ export function DiagnosticsView({ questions, onRetryIncorrect, onMorePractice }:
             <Button 
               variant="default" 
               className="rounded-xl" 
-              onClick={onRetryIncorrect}
+              onClick={onRetryIncorrected}
             >
               🔁 Retry Incorrect ({incorrectQuestions.length})
             </Button>

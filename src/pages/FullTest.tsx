@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle } from "lucide-react";
 
 interface Question {
   id: number;
@@ -55,6 +55,8 @@ export default function FullTest() {
   const [breakTimeLeft, setBreakTimeLeft] = useState(10 * 60); // 10 minutes
   const [isCompleted, setIsCompleted] = useState(false);
   const [currentSection, setCurrentSection] = useState<"reading" | "math">("reading");
+  const [showReview, setShowReview] = useState(false);
+  const [savedState, setSavedState] = useState<any>(null);
 
   const getModuleQuestions = () => {
     if (settings.mode === "full-reading") {
@@ -149,6 +151,19 @@ export default function FullTest() {
   };
 
   const handleModuleComplete = () => {
+    // Check if user wants to review before submitting
+    const unanswered = answers.filter(a => a === null).length;
+    const flaggedCount = flagged.size;
+    
+    if (unanswered > 0 || flaggedCount > 0) {
+      setShowReview(true);
+      return;
+    }
+    
+    proceedToNextModule();
+  };
+
+  const proceedToNextModule = () => {
     if (currentModule === 1) {
       // Start Module 2
       setCurrentModule(2);
@@ -185,9 +200,124 @@ export default function FullTest() {
     startNextSection();
   };
 
+  const handleSaveAndExit = () => {
+    const currentState = {
+      currentModule,
+      currentQuestion,
+      answers,
+      flagged: Array.from(flagged),
+      timeLeft,
+      currentSection,
+      settings
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('savedTestState', JSON.stringify(currentState));
+    navigate('/dashboard');
+  };
+
+  const handleResumeTest = () => {
+    const saved = localStorage.getItem('savedTestState');
+    if (saved) {
+      const state = JSON.parse(saved);
+      setCurrentModule(state.currentModule);
+      setCurrentQuestion(state.currentQuestion);
+      setAnswers(state.answers);
+      setFlagged(new Set(state.flagged));
+      setTimeLeft(state.timeLeft);
+      setCurrentSection(state.currentSection);
+      localStorage.removeItem('savedTestState');
+    }
+  };
+
   const currentQ = sampleQuestions[currentQuestion % sampleQuestions.length];
   const progress = ((currentQuestion + 1) / getModuleQuestions()) * 100;
   const answeredCount = answers.filter(a => a !== null).length;
+
+  // Review Modal
+  if (showReview) {
+    const unanswered = answers.map((a, i) => a === null ? i + 1 : null).filter(Boolean);
+    const flaggedQuestions = Array.from(flagged).map(i => i + 1);
+
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl bg-gradient-card shadow-glow">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Review Before Submit</CardTitle>
+            <p className="text-muted-foreground">Check your answers before moving on</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {unanswered.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-medium">Unanswered Questions ({unanswered.length})</h3>
+                <div className="flex flex-wrap gap-2">
+                  {unanswered.map(qNum => (
+                    <Button
+                      key={qNum}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCurrentQuestion(qNum - 1);
+                        setSelectedAnswer(answers[qNum - 1]);
+                        setShowReview(false);
+                      }}
+                      className="rounded-lg"
+                    >
+                      Q{qNum}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {flaggedQuestions.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-medium">Flagged Questions ({flaggedQuestions.length})</h3>
+                <div className="flex flex-wrap gap-2">
+                  {flaggedQuestions.map(qNum => (
+                    <Button
+                      key={qNum}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCurrentQuestion(qNum - 1);
+                        setSelectedAnswer(answers[qNum - 1]);
+                        setShowReview(false);
+                      }}
+                      className="rounded-lg"
+                    >
+                      <Flag className="h-3 w-3 mr-1" />
+                      Q{qNum}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowReview(false)}
+                className="rounded-xl"
+              >
+                Continue Working
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={() => {
+                  setShowReview(false);
+                  proceedToNextModule();
+                }}
+                className="rounded-xl bg-gradient-primary shadow-glow"
+              >
+                Submit Module
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (showBreak) {
     return (
@@ -260,11 +390,22 @@ export default function FullTest() {
               {currentSection === "reading" ? <BookOpen className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}
               {currentSection === "reading" ? "Reading & Writing" : "Math"} - Module {currentModule}
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Timer className="h-4 w-4" />
-              <span className={timeLeft < 300 ? "text-destructive font-bold" : ""}>
-                {formatTime(timeLeft)}
-              </span>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveAndExit}
+                className="text-xs rounded-lg"
+              >
+                <Save className="h-3 w-3 mr-1" />
+                Save & Exit
+              </Button>
+              <div className="flex items-center gap-2 text-sm">
+                <Timer className="h-4 w-4" />
+                <span className={timeLeft < 300 ? "text-destructive font-bold" : ""}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
             </div>
           </div>
           
@@ -357,23 +498,36 @@ export default function FullTest() {
                 Previous
               </Button>
 
-              {currentQuestion === getModuleQuestions() - 1 ? (
-                <Button
-                  onClick={handleModuleComplete}
-                  className="rounded-xl bg-gradient-primary shadow-glow"
-                >
-                  {currentModule === 1 ? "Complete Module 1" : "Submit Test"}
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  onClick={handleNext}
-                  className="rounded-xl"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {currentQuestion === getModuleQuestions() - 1 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowReview(true)}
+                    className="rounded-xl"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Review
+                  </Button>
+                )}
+                
+                {currentQuestion === getModuleQuestions() - 1 ? (
+                  <Button
+                    onClick={handleModuleComplete}
+                    className="rounded-xl bg-gradient-primary shadow-glow"
+                  >
+                    {currentModule === 1 ? "Complete Module 1" : "Submit Test"}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    onClick={handleNext}
+                    className="rounded-xl"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
