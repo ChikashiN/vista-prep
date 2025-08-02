@@ -422,9 +422,48 @@ export default function FullTest() {
         </div>
       </div>
 
-      {/* Main content */}
+          {/* Main content */}
       <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Flagged questions sidebar */}
+          {flagged.size > 0 && (
+            <div className="lg:col-span-1 order-first lg:order-none">
+              <Card className="bg-gradient-card shadow-card sticky top-24">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Flag className="h-4 w-4 text-warning" />
+                    Flagged Questions ({flagged.size})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {Array.from(flagged).map(qNum => (
+                      <Button
+                        key={qNum}
+                        variant={qNum === currentQuestion ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setCurrentQuestion(qNum);
+                          setSelectedAnswer(answers[qNum]);
+                        }}
+                        className="w-full justify-start rounded-lg"
+                      >
+                        <Flag className="h-3 w-3 mr-2" />
+                        Question {qNum + 1}
+                        {answers[qNum] !== null && (
+                          <Badge variant="secondary" className="ml-auto">
+                            Answered
+                          </Badge>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+        <div className={`${flagged.size > 0 ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 lg:grid-cols-2 gap-8`}>
           {/* Question and passage */}
           <div className="space-y-6">
             {currentQ.passage && (
@@ -530,6 +569,7 @@ export default function FullTest() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
