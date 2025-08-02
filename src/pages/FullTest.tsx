@@ -50,11 +50,15 @@ export default function FullTest() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
-  const [timeLeft, setTimeLeft] = useState(32 * 60); // 32 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(
+    settings.mode === "full-math" ? 35 * 60 : 32 * 60
+  ); // Math: 35 minutes, Reading: 32 minutes
   const [showBreak, setShowBreak] = useState(false);
   const [breakTimeLeft, setBreakTimeLeft] = useState(10 * 60); // 10 minutes
   const [isCompleted, setIsCompleted] = useState(false);
-  const [currentSection, setCurrentSection] = useState<"reading" | "math">("reading");
+  const [currentSection, setCurrentSection] = useState<"reading" | "math">(
+    settings.mode === "full-math" ? "math" : "reading"
+  );
   const [showReview, setShowReview] = useState(false);
   const [savedState, setSavedState] = useState<any>(null);
   const [showFlaggedPanel, setShowFlaggedPanel] = useState(false);
