@@ -61,6 +61,12 @@ export default function FullTest() {
   const [showQuestionReview, setShowQuestionReview] = useState(false);
   const [module1Score, setModule1Score] = useState<number | null>(null);
   const [shouldUseHardModule2, setShouldUseHardModule2] = useState(false);
+  const [module1Answers, setModule1Answers] = useState<(number | null)[]>([]);
+  const [module2Answers, setModule2Answers] = useState<(number | null)[]>([]);
+  const [highlightedText, setHighlightedText] = useState<Set<string>>(new Set());
+  const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set());
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [showReferenceSheet, setShowReferenceSheet] = useState(false);
 
   const getModuleQuestions = () => {
     if (settings.mode === "full-reading") {
@@ -169,6 +175,9 @@ export default function FullTest() {
 
   const proceedToNextModule = () => {
     if (currentModule === 1) {
+      // Save Module 1 answers
+      setModule1Answers([...answers]);
+      
       // Calculate Module 1 score for adaptive testing
       const correctAnswers = answers.filter((answer, index) => {
         const q = sampleQuestions[index % sampleQuestions.length];
@@ -188,16 +197,21 @@ export default function FullTest() {
       setAnswers(new Array(getModuleQuestions()).fill(null));
       setFlagged(new Set());
       setTimeLeft(getModuleTime());
-    } else if (currentSection === "reading" && (settings.mode === "full-test" || settings.mode === "full-reading")) {
-      if (settings.mode === "full-test") {
-        // Show break option
-        setShowBreak(true);
-        setBreakTimeLeft(10 * 60);
+    } else if (currentModule === 2) {
+      // Save Module 2 answers
+      setModule2Answers([...answers]);
+      
+      if (currentSection === "reading" && (settings.mode === "full-test" || settings.mode === "full-reading")) {
+        if (settings.mode === "full-test") {
+          // Show break option
+          setShowBreak(true);
+          setBreakTimeLeft(10 * 60);
+        } else {
+          setIsCompleted(true);
+        }
       } else {
         setIsCompleted(true);
       }
-    } else {
-      setIsCompleted(true);
     }
   };
 
@@ -209,6 +223,11 @@ export default function FullTest() {
     setAnswers(new Array(22).fill(null)); // Math has 22 questions
     setFlagged(new Set());
     setTimeLeft(35 * 60); // Math modules are 35 minutes
+    // Reset module-specific states
+    setModule1Answers([]);
+    setModule2Answers([]);
+    setModule1Score(null);
+    setShouldUseHardModule2(false);
   };
 
   const handleSkipBreak = () => {
@@ -475,16 +494,72 @@ export default function FullTest() {
   }
 
   if (isCompleted) {
-    const score = answers.filter((answer, index) => {
-      const q = sampleQuestions[index % sampleQuestions.length];
-      return answer === q.correctAnswer;
-    }).length;
+    // Calculate combined scores from both modules
+    const calculateCombinedScore = () => {
+      if (settings.mode === "full-test") {
+        // Full test: calculate both sections
+        const readingModule1Correct = module1Answers.slice(0, 27).filter((answer, index) => {
+          const q = sampleQuestions[index % sampleQuestions.length];
+          return answer === q.correctAnswer;
+        }).length;
+        
+        const readingModule2Correct = module2Answers.slice(0, 27).filter((answer, index) => {
+          const q = sampleQuestions[index % sampleQuestions.length];
+          return answer === q.correctAnswer;
+        }).length;
+        
+        const mathModule1Correct = module1Answers.slice(0, 22).filter((answer, index) => {
+          const q = sampleQuestions[index % sampleQuestions.length];
+          return answer === q.correctAnswer;
+        }).length;
+        
+        const mathModule2Correct = module2Answers.slice(0, 22).filter((answer, index) => {
+          const q = sampleQuestions[index % sampleQuestions.length];
+          return answer === q.correctAnswer;
+        }).length;
+        
+        return {
+          readingRawScore: readingModule1Correct + readingModule2Correct,
+          mathRawScore: mathModule1Correct + mathModule2Correct,
+          readingModule1: readingModule1Correct,
+          readingModule2: readingModule2Correct,
+          mathModule1: mathModule1Correct,
+          mathModule2: mathModule2Correct,
+          totalQuestions: 54 + 44, // 27+27 R&W, 22+22 Math
+          totalCorrect: readingModule1Correct + readingModule2Correct + mathModule1Correct + mathModule2Correct
+        };
+      } else {
+        // Single section test
+        const module1Correct = module1Answers.filter((answer, index) => {
+          const q = sampleQuestions[index % sampleQuestions.length];
+          return answer === q.correctAnswer;
+        }).length;
+        
+        const module2Correct = module2Answers.filter((answer, index) => {
+          const q = sampleQuestions[index % sampleQuestions.length];
+          return answer === q.correctAnswer;
+        }).length;
+        
+        const totalCorrect = module1Correct + module2Correct;
+        const totalQuestions = getModuleQuestions() * 2;
+        
+        return {
+          rawScore: totalCorrect,
+          module1Score: module1Correct,
+          module2Score: module2Correct,
+          totalQuestions,
+          totalCorrect,
+          accuracy: (totalCorrect / totalQuestions) * 100
+        };
+      }
+    };
+    
+    const scores = calculateCombinedScore();
     
     // Calculate authentic SAT scores using the official formulas
-    const calculateSATScore = (rawScore: number, isEasyModule: boolean, sectionType: "reading" | "math") => {
+    const calculateSATScore = (rawScore: number, isHardModule2: boolean, sectionType: "reading" | "math") => {
       // Max raw scores: 54 for R&W, 44 for Math
       const maxRaw = sectionType === "reading" ? 54 : 44;
-      const moduleIndicator = isEasyModule ? 1 : 0; // Ie = 1 if easy module, 0 if hard
       
       // Step 1: Raw to Scaled (200-800)
       const baseScaled = 200 + (rawScore / maxRaw) * 600;
@@ -492,111 +567,204 @@ export default function FullTest() {
       // Step 2: Apply ceiling or penalty method based on module difficulty
       let finalScore: number;
       
-      if (isEasyModule) {
-        // Penalty method: F = S - 130 × Ie (so easy gets -130 penalty)
+      if (!isHardModule2) {
+        // Easy Module 2: Use penalty method (subtract 130 points)
         finalScore = baseScaled - 130;
         // Cap at minimum 200
         finalScore = Math.max(200, finalScore);
       } else {
-        // Hard module: no penalty, but apply ceiling at 670 if needed
-        finalScore = Math.min(baseScaled, 670);
+        // Hard Module 2: Use ceiling method (no penalty)
+        finalScore = Math.min(baseScaled, 800); // Cap at 800
       }
       
       return Math.round(finalScore);
     };
     
-    const rawScore = score;
-    const totalQuestions = getModuleQuestions();
-    const isEasyModule = !shouldUseHardModule2; // If didn't advance to hard module 2
-    const scaledScore = calculateSATScore(rawScore, isEasyModule, currentSection);
-    const totalSATScore = currentSection === "reading" ? scaledScore + 400 : 800 + scaledScore; // Simulate total
-
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-3xl bg-gradient-card shadow-glow">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Test Complete!</CardTitle>
-            <p className="text-muted-foreground">
-              {settings.mode === "full-test" ? "Full SAT Practice Test" : 
-               settings.mode === "full-reading" ? "Reading & Writing Section" : "Math Section"}
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-              <div className="space-y-2">
-                <div className="text-3xl font-bold text-primary">{scaledScore}</div>
-                <div className="text-sm text-muted-foreground">Section Score</div>
-                <div className="text-xs text-muted-foreground">out of 800</div>
-              </div>
-              
-              {settings.mode === "full-test" && (
+    // Calculate scores based on test mode
+    if (settings.mode === "full-test") {
+      const readingScore = calculateSATScore(scores.readingRawScore, shouldUseHardModule2, "reading");
+      const mathScore = calculateSATScore(scores.mathRawScore, shouldUseHardModule2, "math");
+      const totalScore = readingScore + mathScore;
+      const overallAccuracy = Math.round((scores.totalCorrect / scores.totalQuestions) * 100);
+      
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="w-full max-w-4xl bg-gradient-card shadow-glow">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl">Full Test Complete!</CardTitle>
+              <p className="text-muted-foreground">Your SAT practice test results</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                 <div className="space-y-2">
-                  <div className="text-3xl font-bold text-primary">{totalSATScore}</div>
-                  <div className="text-sm text-muted-foreground">Total Score</div>
-                  <div className="text-xs text-muted-foreground">out of 1600</div>
+                  <div className="text-4xl font-bold text-primary">{totalScore}</div>
+                  <div className="text-sm text-muted-foreground">Total SAT Score (/1600)</div>
                 </div>
-              )}
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-blue-600">{readingScore}</div>
+                  <div className="text-sm text-muted-foreground">Reading & Writing (/800)</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-green-600">{mathScore}</div>
+                  <div className="text-sm text-muted-foreground">Math (/800)</div>
+                </div>
+              </div>
               
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">{Math.round((rawScore / totalQuestions) * 100)}%</div>
-                <div className="text-sm text-muted-foreground">Accuracy</div>
-                <div className="text-xs text-muted-foreground">{rawScore}/{totalQuestions} correct</div>
-              </div>
-            </div>
-
-            {module1Score && (
-              <div className="border-t pt-4">
-                <h3 className="font-medium mb-3">Module Performance</h3>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="space-y-2">
-                    <div className="text-lg font-bold">Module 1</div>
-                    <div className="text-sm text-muted-foreground">{module1Score}/{getModuleQuestions()} correct</div>
-                    <Badge variant={shouldUseHardModule2 ? "default" : "secondary"}>
-                      {shouldUseHardModule2 ? "Advanced to Hard Module 2" : "Standard Module 2"}
-                    </Badge>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                  <h3 className="font-medium text-blue-600">Reading & Writing Performance</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Module 1:</span>
+                      <span className="font-medium">{scores.readingModule1}/27</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Module 2:</span>
+                      <span className="font-medium">{scores.readingModule2}/27 ({shouldUseHardModule2 ? 'Hard' : 'Easy'})</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span>Total:</span>
+                      <span className="font-medium">{scores.readingRawScore}/54</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Accuracy:</span>
+                      <span className="font-medium">{Math.round((scores.readingRawScore / 54) * 100)}%</span>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-lg font-bold">Module 2</div>
-                    <div className="text-sm text-muted-foreground">{rawScore - (module1Score || 0)}/{getModuleQuestions()} correct</div>
-                    <Badge variant="outline">
-                      {shouldUseHardModule2 ? "Hard Difficulty" : "Standard Difficulty"}
-                    </Badge>
+                </div>
+                
+                <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                  <h3 className="font-medium text-green-600">Math Performance</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Module 1:</span>
+                      <span className="font-medium">{scores.mathModule1}/22</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Module 2:</span>
+                      <span className="font-medium">{scores.mathModule2}/22 ({shouldUseHardModule2 ? 'Hard' : 'Easy'})</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span>Total:</span>
+                      <span className="font-medium">{scores.mathRawScore}/44</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Accuracy:</span>
+                      <span className="font-medium">{Math.round((scores.mathRawScore / 44) * 100)}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
+              
+              <div className="text-center space-y-2">
+                <div className="text-lg font-medium">Overall Test Accuracy: {overallAccuracy}%</div>
+                <div className="text-sm text-muted-foreground">
+                  {scores.totalCorrect} correct out of {scores.totalQuestions} total questions
+                </div>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button variant="outline" className="rounded-xl" onClick={() => navigate('/dashboard')}>
-                🏠 Return to Dashboard
-              </Button>
-              <Button 
-                variant="default" 
-                className="rounded-xl"
-                onClick={() => navigate('/diagnostics', { 
-                  state: { 
-                    questions: sampleQuestions.slice(0, totalQuestions).map((q, i) => ({
-                      ...q,
-                      userAnswer: answers[i],
-                      explanation: `This is a sample explanation for ${q.domain} question about ${q.question.substring(0, 30)}...`
-                    })),
-                    totalScore: scaledScore,
-                    sectionType: currentSection
-                  }
-                })}
-              >
-                📈 View Full Diagnostics
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/practice')}
+                  className="rounded-xl"
+                >
+                  More Practice
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={() => navigate('/diagnostics', { 
+                    state: { 
+                      questions: sampleQuestions.map((q, index) => ({
+                        ...q,
+                        userAnswer: answers[index] || null
+                      }))
+                    }
+                  })}
+                  className="rounded-xl bg-gradient-primary shadow-glow"
+                >
+                  View Detailed Diagnostic
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    } else {
+      // Single section test
+      const sectionScore = calculateSATScore(scores.rawScore, shouldUseHardModule2, currentSection);
+      
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="w-full max-w-2xl bg-gradient-card shadow-glow">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl">Test Complete!</CardTitle>
+              <p className="text-muted-foreground">
+                {currentSection === "reading" ? "Reading & Writing" : "Math"} Section Results
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-primary">{scores.accuracy.toFixed(1)}%</div>
+                  <div className="text-sm text-muted-foreground">Overall Accuracy</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-primary">{scores.totalCorrect}/{scores.totalQuestions}</div>
+                  <div className="text-sm text-muted-foreground">Questions Correct</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-primary">{sectionScore}/800</div>
+                  <div className="text-sm text-muted-foreground">SAT Score</div>
+                </div>
+              </div>
+              
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-medium">Performance Breakdown</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Module 1:</span>
+                    <span className="font-medium ml-2">{scores.module1Score}/{getModuleQuestions()}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Module 2:</span>
+                    <span className="font-medium ml-2">{scores.module2Score}/{getModuleQuestions()} ({shouldUseHardModule2 ? 'Hard' : 'Easy'})</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/practice')}
+                  className="rounded-xl"
+                >
+                  More Practice
+                </Button>
+                <Button 
+                  variant="default" 
+                  onClick={() => navigate('/diagnostics', { 
+                    state: { 
+                      questions: sampleQuestions.map((q, index) => ({
+                        ...q,
+                        userAnswer: answers[index] || null
+                      }))
+                    }
+                  })}
+                  className="rounded-xl bg-gradient-primary shadow-glow"
+                >
+                  View Diagnostic
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {showQuestionReview && <QuestionReviewModal />}
       <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
       {/* Header with progress and timer */}
@@ -608,40 +776,55 @@ export default function FullTest() {
               {currentSection === "reading" ? "Reading & Writing" : "Math"} - Module {currentModule}
             </div>
             <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowQuestionReview(true)}
+                className="rounded-lg"
+              >
+                <Menu className="h-4 w-4 mr-2" />
+                Review Questions
+              </Button>
+              
               {flagged.size > 0 && (
-                <Button
-                  variant="ghost"
+                <Button 
+                  variant="outline" 
                   size="sm"
                   onClick={() => setShowFlaggedPanel(!showFlaggedPanel)}
-                  className="text-xs"
+                  className="rounded-lg"
                 >
-                  <Flag className="h-3 w-3 mr-1" />
                   Flagged ({flagged.size})
                 </Button>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowQuestionReview(true)}
-                className="text-xs"
-              >
-                <Menu className="h-3 w-3 mr-1" />
-                Review Questions
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSaveAndExit}
-                className="text-xs rounded-lg"
-              >
-                <Save className="h-3 w-3 mr-1" />
-                Save & Exit
-              </Button>
+              
+              {currentSection === "math" && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowCalculator(!showCalculator)}
+                    className="rounded-lg"
+                  >
+                    <Calculator className="h-4 w-4 mr-1" />
+                    Calculator
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowReferenceSheet(!showReferenceSheet)}
+                    className="rounded-lg"
+                  >
+                    <BookOpen className="h-4 w-4 mr-1" />
+                    Formulas
+                  </Button>
+                </div>
+              )}
+              
               <div className="flex items-center gap-2 text-sm">
-                <Timer className="h-4 w-4" />
-                <span className={timeLeft < 300 ? "text-destructive font-bold" : ""}>
-                  {formatTime(timeLeft)}
-                </span>
+                <div className="flex items-center gap-1">
+                  <Timer className="h-4 w-4" />
+                  <span className="font-mono">{formatTime(timeLeft)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -659,156 +842,224 @@ export default function FullTest() {
         </div>
       </div>
 
-          {/* Main content */}
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Flagged questions sidebar */}
-          {flagged.size > 0 && showFlaggedPanel && (
-            <div className="lg:col-span-1 order-first lg:order-none">
-              <Card className="bg-gradient-card shadow-card sticky top-24">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Flag className="h-4 w-4 text-warning" />
-                    Flagged Questions ({flagged.size})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {Array.from(flagged).map(qNum => (
-                      <Button
-                        key={qNum}
-                        variant={qNum === currentQuestion ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setCurrentQuestion(qNum);
-                          setSelectedAnswer(answers[qNum]);
+      <div className="flex-1 p-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Question Content */}
+          <Card className="bg-gradient-card shadow-glow">
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {currentQ.passage && (
+                  <div className="space-y-3">
+                    <h3 className="font-medium text-muted-foreground flex items-center gap-2">
+                      Passage
+                      {currentSection === "reading" && (
+                        <span className="text-xs text-muted-foreground">(Click to highlight text)</span>
+                      )}
+                    </h3>
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p 
+                        className="leading-relaxed select-text cursor-text"
+                        onMouseUp={() => {
+                          if (currentSection === "reading") {
+                            const selection = window.getSelection();
+                            const selectedText = selection?.toString();
+                            if (selectedText && selectedText.trim()) {
+                              const newHighlighted = new Set(highlightedText);
+                              newHighlighted.add(selectedText);
+                              setHighlightedText(newHighlighted);
+                            }
+                          }
                         }}
-                        className="w-full justify-start rounded-lg"
                       >
-                        <Flag className="h-3 w-3 mr-2" />
-                        Question {qNum + 1}
-                        {answers[qNum] !== null && (
-                          <Badge variant="secondary" className="ml-auto">
-                            Answered
-                          </Badge>
-                        )}
-                      </Button>
-                    ))}
+                        {currentQ.passage}
+                      </p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-        <div className={`${flagged.size > 0 && showFlaggedPanel ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 lg:grid-cols-2 gap-8`}>
-          {/* Question and passage */}
-          <div className="space-y-6">
-            {currentQ.passage && (
-              <Card className="bg-gradient-card shadow-card">
-                <CardHeader>
-                  <CardTitle className="text-lg">Passage</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed">{currentQ.passage}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">Question {currentQuestion + 1}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {currentQ.domain}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleFlag}
-                      className={`rounded-lg ${flagged.has(currentQuestion) ? 'text-warning' : ''}`}
-                    >
-                      <Flag className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-relaxed">{currentQ.question}</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Answer choices */}
-          <div className="space-y-4">
-            <Card className="bg-gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="text-lg">Answer Choices</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {currentQ.choices.map((choice, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswerSelect(index)}
-                    className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 ${
-                      selectedAnswer === index
-                        ? 'border-primary bg-primary/10 shadow-soft'
-                        : 'border-border hover:border-primary/50 hover:shadow-soft'
-                    }`}
-                  >
-                    <span className="text-sm">{choice}</span>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentQuestion === 0}
-                className="rounded-xl"
-              >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous
-              </Button>
-
-              <div className="flex items-center gap-2">
-                {currentQuestion === getModuleQuestions() - 1 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowReview(true)}
-                    className="rounded-xl"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Review
-                  </Button>
                 )}
                 
-                {currentQuestion === getModuleQuestions() - 1 ? (
-                  <Button
-                    onClick={handleModuleComplete}
-                    className="rounded-xl bg-gradient-primary shadow-glow"
-                  >
-                    {currentModule === 1 ? "Complete Module 1" : "Submit Test"}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="default"
-                    onClick={handleNext}
-                    className="rounded-xl"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
+                <div className="space-y-4">
+                  <h2 className="text-lg font-medium">{currentQ.question}</h2>
+                  
+                  <div className="space-y-3">
+                    {currentQ.choices.map((choice, index) => {
+                      const choiceKey = `${currentQuestion}-${index}`;
+                      const isEliminated = eliminatedChoices.has(choiceKey);
+                      
+                      return (
+                        <div key={index} className="relative">
+                          <button
+                            onClick={() => !isEliminated && handleAnswerSelect(index)}
+                            disabled={isEliminated}
+                            className={`w-full p-4 text-left rounded-lg border transition-all ${
+                              selectedAnswer === index && !isEliminated
+                                ? 'border-primary bg-primary/10 shadow-glow'
+                                : isEliminated
+                                ? 'border-border bg-muted/30 opacity-50 line-through'
+                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                            }`}
+                          >
+                            <span className="font-medium mr-3">
+                              {String.fromCharCode(65 + index)}.
+                            </span>
+                            {choice}
+                          </button>
+                          
+                          {/* Elimination button */}
+                          <button
+                            onClick={() => {
+                              const newEliminated = new Set(eliminatedChoices);
+                              if (isEliminated) {
+                                newEliminated.delete(choiceKey);
+                              } else {
+                                newEliminated.add(choiceKey);
+                                if (selectedAnswer === index) {
+                                  setSelectedAnswer(null);
+                                  const newAnswers = [...answers];
+                                  newAnswers[currentQuestion] = null;
+                                  setAnswers(newAnswers);
+                                }
+                              }
+                              setEliminatedChoices(newEliminated);
+                            }}
+                            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-bold transition-colors"
+                            title={isEliminated ? "Restore option" : "Eliminate option"}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentQuestion === 0}
+              className="rounded-xl"
+            >
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={handleFlag}
+                className={`rounded-xl ${flagged.has(currentQuestion) ? 'text-warning' : ''}`}
+              >
+                <Flag className="h-4 w-4 mr-2" />
+                {flagged.has(currentQuestion) ? 'Unflag' : 'Flag'}
+              </Button>
+              
+              {currentQuestion === getModuleQuestions() - 1 ? (
+                <Button
+                  onClick={handleModuleComplete}
+                  className="rounded-xl bg-gradient-primary shadow-glow"
+                >
+                  {currentModule === 1 ? "Complete Module 1" : "Submit Test"}
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  onClick={handleNext}
+                  className="rounded-xl"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
-        </div>
       </div>
+
+      {/* Question Review Pop-up */}
+      {showQuestionReview && <QuestionReviewModal />}
+      
+      {/* Math Calculator */}
+      {showCalculator && currentSection === "math" && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md bg-gradient-card shadow-glow">
+            <CardHeader className="text-center border-b">
+              <CardTitle>Desmos Graphing Calculator</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-64 bg-muted/50 rounded-lg flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <Calculator className="h-12 w-12 mx-auto mb-2" />
+                  <p>Graphing Calculator Interface</p>
+                  <p className="text-xs">Real Desmos integration would go here</p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCalculator(false)}
+                className="w-full mt-4"
+              >
+                Close Calculator
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
+      {/* Math Reference Sheet */}
+      {showReferenceSheet && currentSection === "math" && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-2xl bg-gradient-card shadow-glow max-h-[80vh] overflow-hidden">
+            <CardHeader className="text-center border-b">
+              <CardTitle>Math Reference Sheet</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 overflow-y-auto">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <h3 className="font-medium">Area and Volume</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div>Circle: A = πr²</div>
+                    <div>Rectangle: A = lw</div>
+                    <div>Triangle: A = ½bh</div>
+                    <div>Cylinder: V = πr²h</div>
+                    <div>Sphere: V = ⁴⁄₃πr³</div>
+                    <div>Cone: V = ⁄₃πr²h</div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <h3 className="font-medium">Pythagorean Theorem</h3>
+                  <div className="text-sm">a² + b² = c²</div>
+                </div>
+                
+                <div className="space-y-3">
+                  <h3 className="font-medium">Special Right Triangles</h3>
+                  <div className="text-sm space-y-1">
+                    <div>30°-60°-90°: sides in ratio 1 : √3 : 2</div>
+                    <div>45°-45°-90°: sides in ratio 1 : 1 : √2</div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <h3 className="font-medium">Quadratic Formula</h3>
+                  <div className="text-sm">x = (-b ± √(b² - 4ac)) / 2a</div>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setShowReferenceSheet(false)}
+                className="w-full mt-6"
+              >
+                Close Reference Sheet
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
