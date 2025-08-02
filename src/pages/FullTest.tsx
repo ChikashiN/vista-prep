@@ -831,9 +831,9 @@ export default function FullTest() {
           )}
           
           {/* Question Navigation Bar */}
-          <div className="mt-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-slate-300 mr-2">Intro</span>
+          <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-4 shadow-card">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-muted-foreground font-medium">Questions:</span>
               {Array.from({ length: getModuleQuestions() }, (_, index) => {
                 const isAnswered = answers[index] !== null;
                 const isFlagged = flagged.has(index);
@@ -847,18 +847,18 @@ export default function FullTest() {
                       setSelectedAnswer(answers[index]);
                     }}
                     className={`
-                      w-8 h-8 rounded-lg border-2 text-sm font-medium transition-all relative
+                      relative w-8 h-8 rounded-full text-sm font-medium transition-all duration-200
                       ${isCurrent 
-                        ? 'bg-blue-500 border-blue-500 text-white' 
+                        ? 'bg-primary text-primary-foreground shadow-glow ring-2 ring-primary/30' 
                         : isAnswered 
-                        ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
-                        : 'bg-white border-slate-300 text-slate-700 hover:border-blue-300'
+                        ? 'bg-success text-success-foreground shadow-soft' 
+                        : 'bg-muted border border-border text-muted-foreground hover:bg-primary/10 hover:border-primary hover:text-primary hover:scale-105'
                       }
                     `}
                   >
                     {index + 1}
                     {isFlagged && (
-                      <Flag className="absolute -top-1 -right-1 h-3 w-3 text-orange-500 fill-current" />
+                      <Flag className="absolute -top-1 -right-1 h-3 w-3 text-warning fill-warning" />
                     )}
                   </button>
                 );
