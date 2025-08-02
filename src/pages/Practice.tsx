@@ -226,9 +226,34 @@ export default function Practice() {
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-muted-foreground">
-              {section === 'reading' ? 'Reading & Writing' : 'Math'} Practice
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                {section === 'reading' ? 'Reading & Writing' : 'Math'} Practice
+              </div>
+              
+              {/* Math section tools */}
+              {section === 'math' && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open('https://www.desmos.com/testing/cb-sat-ap/graphing', '_blank')}
+                    className="text-xs px-2 py-1 h-auto"
+                  >
+                    🧮 Calculator
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open('https://testinnovators.com/sat/web-app/images/SATShapeResources.pdf', '_blank')}
+                    className="text-xs px-2 py-1 h-auto"
+                  >
+                    📐 Reference
+                  </Button>
+                </div>
+              )}
             </div>
+            
             {settings.timedMode && (
               <div className="flex items-center gap-2 text-sm">
                 <Timer className="h-4 w-4" />
@@ -246,6 +271,31 @@ export default function Practice() {
             <span className="text-sm text-muted-foreground">
               {answeredCount} answered
             </span>
+          </div>
+          
+          {/* Question number navigation */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {Array.from({ length: questionCount }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setCurrentQuestion(i);
+                  setSelectedAnswer(answers[i]);
+                }}
+                className={`w-8 h-8 rounded-lg text-xs font-medium border-2 transition-all relative ${
+                  i === currentQuestion
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : answers[i] !== null
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : 'border-muted-foreground/30 hover:border-primary/50'
+                }`}
+              >
+                {i + 1}
+                {flagged.has(i) && (
+                  <Flag className="h-3 w-3 text-warning absolute -top-1 -right-1 fill-current" />
+                )}
+              </button>
+            ))}
           </div>
           
           <Progress value={progress} className="h-2" />
