@@ -58,6 +58,7 @@ export default function FullTest() {
   const [showReview, setShowReview] = useState(false);
   const [savedState, setSavedState] = useState<any>(null);
   const [showFlaggedPanel, setShowFlaggedPanel] = useState(false);
+  const [showQuestionReview, setShowQuestionReview] = useState(false);
   const [module1Score, setModule1Score] = useState<number | null>(null);
   const [shouldUseHardModule2, setShouldUseHardModule2] = useState(false);
 
@@ -249,6 +250,121 @@ export default function FullTest() {
   const progress = ((currentQuestion + 1) / getModuleQuestions()) * 100;
   const answeredCount = answers.filter(a => a !== null).length;
 
+  // Question Review Pop-up
+  const QuestionReviewModal = () => {
+    const unansweredQuestions = answers.map((a, i) => a === null ? i : null).filter(q => q !== null) as number[];
+    const flaggedQuestions = Array.from(flagged);
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden bg-gradient-card shadow-glow">
+          <CardHeader className="text-center border-b">
+            <CardTitle className="text-xl">Question Review</CardTitle>
+            <p className="text-sm text-muted-foreground">Click any question to jump to it</p>
+          </CardHeader>
+          <CardContent className="p-6 overflow-y-auto">
+            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-3">
+              {Array.from({ length: getModuleQuestions() }, (_, index) => {
+                const isAnswered = answers[index] !== null;
+                const isFlagged = flagged.has(index);
+                const isCurrent = index === currentQuestion;
+                
+                return (
+                  <Button
+                    key={index}
+                    variant={isCurrent ? "default" : isAnswered ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setCurrentQuestion(index);
+                      setSelectedAnswer(answers[index]);
+                      setShowQuestionReview(false);
+                    }}
+                    className={`
+                      relative h-12 w-12 p-0 rounded-lg
+                      ${!isAnswered ? 'border-destructive text-destructive' : ''}
+                      ${isCurrent ? 'ring-2 ring-primary' : ''}
+                    `}
+                  >
+                    <span className="text-xs font-medium">{index + 1}</span>
+                    {isFlagged && (
+                      <Flag className="absolute -top-1 -right-1 h-3 w-3 text-orange-500" />
+                    )}
+                    {isAnswered && !isCurrent && (
+                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            {/* Filter sections */}
+            <div className="mt-6 space-y-4">
+              {unansweredQuestions.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-destructive">
+                    ❌ Unanswered Questions ({unansweredQuestions.length})
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {unansweredQuestions.map(qIndex => (
+                      <Button
+                        key={qIndex}
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setCurrentQuestion(qIndex);
+                          setSelectedAnswer(answers[qIndex]);
+                          setShowQuestionReview(false);
+                        }}
+                        className="text-xs"
+                      >
+                        Q{qIndex + 1}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {flaggedQuestions.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-orange-600">
+                    🚩 Flagged for Review ({flaggedQuestions.length})
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {flaggedQuestions.map(qIndex => (
+                      <Button
+                        key={qIndex}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setCurrentQuestion(qIndex);
+                          setSelectedAnswer(answers[qIndex]);
+                          setShowQuestionReview(false);
+                        }}
+                        className="text-xs"
+                      >
+                        <Flag className="h-3 w-3 mr-1" />
+                        Q{qIndex + 1}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+          <div className="border-t p-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowQuestionReview(false)}
+              className="w-full"
+            >
+              Close Review
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
   // Review Modal
   if (showReview) {
     const unanswered = answers.map((a, i) => a === null ? i + 1 : null).filter(Boolean);
@@ -364,13 +480,35 @@ export default function FullTest() {
       return answer === q.correctAnswer;
     }).length;
     
-    // Calculate SAT scaled scores (simulated)
+    // Calculate authentic SAT scores using the official formulas
+    const calculateSATScore = (rawScore: number, isEasyModule: boolean, sectionType: "reading" | "math") => {
+      // Max raw scores: 54 for R&W, 44 for Math
+      const maxRaw = sectionType === "reading" ? 54 : 44;
+      const moduleIndicator = isEasyModule ? 1 : 0; // Ie = 1 if easy module, 0 if hard
+      
+      // Step 1: Raw to Scaled (200-800)
+      const baseScaled = 200 + (rawScore / maxRaw) * 600;
+      
+      // Step 2: Apply ceiling or penalty method based on module difficulty
+      let finalScore: number;
+      
+      if (isEasyModule) {
+        // Penalty method: F = S - 130 × Ie (so easy gets -130 penalty)
+        finalScore = baseScaled - 130;
+        // Cap at minimum 200
+        finalScore = Math.max(200, finalScore);
+      } else {
+        // Hard module: no penalty, but apply ceiling at 670 if needed
+        finalScore = Math.min(baseScaled, 670);
+      }
+      
+      return Math.round(finalScore);
+    };
+    
     const rawScore = score;
     const totalQuestions = getModuleQuestions();
-    const percentage = Math.round((rawScore / totalQuestions) * 100);
-    
-    // Simulate SAT scoring conversion (800 max per section)
-    const scaledScore = Math.round((percentage / 100) * 800);
+    const isEasyModule = !shouldUseHardModule2; // If didn't advance to hard module 2
+    const scaledScore = calculateSATScore(rawScore, isEasyModule, currentSection);
     const totalSATScore = currentSection === "reading" ? scaledScore + 400 : 800 + scaledScore; // Simulate total
 
     return (
@@ -400,7 +538,7 @@ export default function FullTest() {
               )}
               
               <div className="space-y-2">
-                <div className="text-2xl font-bold">{percentage}%</div>
+                <div className="text-2xl font-bold">{Math.round((rawScore / totalQuestions) * 100)}%</div>
                 <div className="text-sm text-muted-foreground">Accuracy</div>
                 <div className="text-xs text-muted-foreground">{rawScore}/{totalQuestions} correct</div>
               </div>
@@ -458,6 +596,7 @@ export default function FullTest() {
 
   return (
     <div className="min-h-screen bg-background">
+      {showQuestionReview && <QuestionReviewModal />}
       <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
       {/* Header with progress and timer */}
@@ -474,12 +613,21 @@ export default function FullTest() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowFlaggedPanel(!showFlaggedPanel)}
-                  className="text-xs rounded-lg"
+                  className="text-xs"
                 >
-                  <Menu className="h-3 w-3 mr-1" />
+                  <Flag className="h-3 w-3 mr-1" />
                   Flagged ({flagged.size})
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowQuestionReview(true)}
+                className="text-xs"
+              >
+                <Menu className="h-3 w-3 mr-1" />
+                Review Questions
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
