@@ -880,7 +880,7 @@ export default function FullTest() {
                 >
                   {index + 1}
                   {isFlagged && (
-                    <Flag className="absolute -top-1 -right-1 w-2.5 h-2.5 text-orange-500" />
+                    <Flag className="absolute -top-0.5 -right-0.5 w-3 h-3 text-orange-500 fill-orange-500 drop-shadow-sm" />
                   )}
                 </button>
               );
