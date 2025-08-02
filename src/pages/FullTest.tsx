@@ -48,8 +48,18 @@ export default function FullTest() {
   const [currentModule, setCurrentModule] = useState(1);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<(number | null)[]>([]);
-  const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  // Module-specific state management
+  const [module1Answers, setModule1Answers] = useState<(number | null)[]>([]);
+  const [module2Answers, setModule2Answers] = useState<(number | null)[]>([]);
+  const [module1Flagged, setModule1Flagged] = useState<Set<number>>(new Set());
+  const [module2Flagged, setModule2Flagged] = useState<Set<number>>(new Set());
+  
+  // Current module's answers and flags (computed based on currentModule)
+  const answers = currentModule === 1 ? module1Answers : module2Answers;
+  const setAnswers = currentModule === 1 ? setModule1Answers : setModule2Answers;
+  const flagged = currentModule === 1 ? module1Flagged : module2Flagged;
+  const setFlagged = currentModule === 1 ? setModule1Flagged : setModule2Flagged;
+
   const [timeLeft, setTimeLeft] = useState(
     settings.mode === "full-math" ? 35 * 60 : 32 * 60
   ); // Math: 35 minutes, Reading: 32 minutes
@@ -65,8 +75,6 @@ export default function FullTest() {
   const [showQuestionReview, setShowQuestionReview] = useState(false);
   const [module1Score, setModule1Score] = useState<number | null>(null);
   const [shouldUseHardModule2, setShouldUseHardModule2] = useState(false);
-  const [module1Answers, setModule1Answers] = useState<(number | null)[]>([]);
-  const [module2Answers, setModule2Answers] = useState<(number | null)[]>([]);
   const [highlightedText, setHighlightedText] = useState<Set<string>>(new Set());
   const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set());
   const [showCalculator, setShowCalculator] = useState(false);
@@ -90,10 +98,16 @@ export default function FullTest() {
     }
   };
 
-  // Initialize answers array
+  // Initialize module answers arrays
   useEffect(() => {
-    setAnswers(new Array(getModuleQuestions()).fill(null));
-  }, [currentModule, currentSection, settings.mode]);
+    const questionsPerModule = getModuleQuestions();
+    if (module1Answers.length === 0) {
+      setModule1Answers(new Array(questionsPerModule).fill(null));
+    }
+    if (module2Answers.length === 0) {
+      setModule2Answers(new Array(questionsPerModule).fill(null));
+    }
+  }, [currentSection, settings.mode]);
 
   // Timer effect
   useEffect(() => {
@@ -198,8 +212,10 @@ export default function FullTest() {
       setCurrentModule(2);
       setCurrentQuestion(0);
       setSelectedAnswer(null);
-      setAnswers(new Array(getModuleQuestions()).fill(null));
-      setFlagged(new Set());
+      // Initialize Module 2 answers if empty
+      if (module2Answers.length === 0) {
+        setModule2Answers(new Array(getModuleQuestions()).fill(null));
+      }
       setTimeLeft(getModuleTime());
     } else if (currentModule === 2) {
       // Save Module 2 answers
@@ -224,12 +240,12 @@ export default function FullTest() {
     setCurrentModule(1);
     setCurrentQuestion(0);
     setSelectedAnswer(null);
-    setAnswers(new Array(22).fill(null)); // Math has 22 questions
-    setFlagged(new Set());
     setTimeLeft(35 * 60); // Math modules are 35 minutes
-    // Reset module-specific states
-    setModule1Answers([]);
+    // Reset module-specific states for new section
+    setModule1Answers(new Array(22).fill(null)); // Math has 22 questions
     setModule2Answers([]);
+    setModule1Flagged(new Set());
+    setModule2Flagged(new Set());
     setModule1Score(null);
     setShouldUseHardModule2(false);
   };

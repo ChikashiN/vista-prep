@@ -3,6 +3,7 @@ import { SectionCard } from "@/components/SectionCard";
 import { DailyChallenge } from "@/components/DailyChallenge";
 import { XPTracker } from "@/components/XPTracker";
 import { TestModeCard } from "@/components/TestModeCard";
+import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -190,6 +191,9 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Performance Dashboard */}
+            <PerformanceDashboard />
           </div>
 
           {/* Sidebar - Right column */}
