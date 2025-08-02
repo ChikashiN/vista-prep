@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle, Menu, FileText, Pause, Square } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle, Menu } from "lucide-react";
 
 interface Question {
   id: number;
@@ -767,110 +767,77 @@ export default function FullTest() {
     <div className="min-h-screen bg-background">
       <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
-      {/* Header with SAT-style layout */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold">DIGITAL SAT PRACTICE TEST</h1>
-              <p className="text-slate-300 text-sm mt-1">
-                {currentSection.toUpperCase() === "READING" ? "READING AND WRITING" : "MATH"}: MODULE {currentModule}
-              </p>
+      {/* Header with progress and timer */}
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              {currentSection === "reading" ? <BookOpen className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}
+              {currentSection === "reading" ? "Reading & Writing" : "Math"} - Module {currentModule}
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-xs text-slate-300">TIME REMAINING</p>
-                <div className="bg-white text-slate-900 px-3 py-1 rounded-full font-mono text-sm">
-                  {formatTime(timeLeft)}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowQuestionReview(true)}
+                className="rounded-lg"
+              >
+                <Menu className="h-4 w-4 mr-2" />
+                Review Questions
+              </Button>
+              
+              {flagged.size > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowFlaggedPanel(!showFlaggedPanel)}
+                  className="rounded-lg"
+                >
+                  Flagged ({flagged.size})
+                </Button>
+              )}
+              
+              {currentSection === "math" && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowCalculator(!showCalculator)}
+                    className="rounded-lg"
+                  >
+                    <Calculator className="h-4 w-4 mr-1" />
+                    Calculator
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowReferenceSheet(!showReferenceSheet)}
+                    className="rounded-lg"
+                  >
+                    <BookOpen className="h-4 w-4 mr-1" />
+                    Formulas
+                  </Button>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1">
+                  <Timer className="h-4 w-4" />
+                  <span className="font-mono">{formatTime(timeLeft)}</span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <Pause className="h-3 w-3 mr-1" />
-                  PAUSE SECTION
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                  onClick={handleModuleComplete}
-                >
-                  <Square className="h-3 w-3 mr-1" />
-                  END MODULE
-                </Button>
-              </div>
             </div>
           </div>
           
-          {/* Math Tools (only for Math sections) */}
-          {currentSection === 'math' && (
-            <div className="flex gap-3 mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open('https://www.desmos.com/testing/cb-sat-ap/graphing', '_blank')}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <Calculator className="h-4 w-4 mr-2" />
-                CALCULATOR
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open('https://testinnovators.com/sat/web-app/images/SATShapeResources.pdf', '_blank')}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                REFERENCE
-              </Button>
-            </div>
-          )}
-          
-          {/* Question Navigation Bar */}
-          <div className="bg-white/95 backdrop-blur-sm border border-white/20 rounded-xl p-4 mt-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-white/70 font-medium">Questions:</span>
-              {Array.from({ length: getModuleQuestions() }, (_, index) => {
-                const isAnswered = answers[index] !== null;
-                const isFlagged = flagged.has(index);
-                const isCurrent = currentQuestion === index;
-                
-                return (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setCurrentQuestion(index);
-                      setSelectedAnswer(answers[index]);
-                    }}
-                    className={`
-                      relative w-8 h-8 rounded-full text-sm font-medium transition-all duration-200
-                      ${isCurrent 
-                        ? 'bg-primary text-primary-foreground shadow-glow ring-2 ring-primary/30' 
-                        : isAnswered 
-                        ? 'bg-success text-success-foreground shadow-soft' 
-                        : 'bg-muted border border-border text-muted-foreground hover:bg-primary/10 hover:border-primary hover:text-primary hover:scale-105'
-                      }
-                    `}
-                  >
-                    {index + 1}
-                    {isFlagged && (
-                      <Flag className="absolute -top-1 -right-1 h-3 w-3 text-warning fill-warning" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">
+              Question {currentQuestion + 1} of {getModuleQuestions()}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {answeredCount} answered
+            </span>
           </div>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="bg-card border-b px-6 py-2">
-        <div className="container mx-auto">
+          
           <Progress value={progress} className="h-2" />
         </div>
       </div>
