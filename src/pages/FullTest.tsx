@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle, Menu } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle, Menu, FileText, Pause, Square } from "lucide-react";
 
 interface Question {
   id: number;
@@ -767,77 +767,110 @@ export default function FullTest() {
     <div className="min-h-screen bg-background">
       <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
-      {/* Header with progress and timer */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-muted-foreground flex items-center gap-2">
-              {currentSection === "reading" ? <BookOpen className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}
-              {currentSection === "reading" ? "Reading & Writing" : "Math"} - Module {currentModule}
+      {/* Header with SAT-style layout */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-bold">DIGITAL SAT PRACTICE TEST</h1>
+              <p className="text-slate-300 text-sm mt-1">
+                {currentSection.toUpperCase() === "READING" ? "READING AND WRITING" : "MATH"}: MODULE {currentModule}
+              </p>
             </div>
             <div className="flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowQuestionReview(true)}
-                className="rounded-lg"
-              >
-                <Menu className="h-4 w-4 mr-2" />
-                Review Questions
-              </Button>
-              
-              {flagged.size > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-slate-300">TIME REMAINING</p>
+                <div className="bg-white text-slate-900 px-3 py-1 rounded-full font-mono text-sm">
+                  {formatTime(timeLeft)}
+                </div>
+              </div>
+              <div className="flex gap-2">
                 <Button 
-                  variant="outline" 
+                  variant="secondary" 
                   size="sm"
-                  onClick={() => setShowFlaggedPanel(!showFlaggedPanel)}
-                  className="rounded-lg"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
-                  Flagged ({flagged.size})
+                  <Pause className="h-3 w-3 mr-1" />
+                  PAUSE SECTION
                 </Button>
-              )}
-              
-              {currentSection === "math" && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowCalculator(!showCalculator)}
-                    className="rounded-lg"
-                  >
-                    <Calculator className="h-4 w-4 mr-1" />
-                    Calculator
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowReferenceSheet(!showReferenceSheet)}
-                    className="rounded-lg"
-                  >
-                    <BookOpen className="h-4 w-4 mr-1" />
-                    Formulas
-                  </Button>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 text-sm">
-                <div className="flex items-center gap-1">
-                  <Timer className="h-4 w-4" />
-                  <span className="font-mono">{formatTime(timeLeft)}</span>
-                </div>
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  onClick={handleModuleComplete}
+                >
+                  <Square className="h-3 w-3 mr-1" />
+                  END MODULE
+                </Button>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">
-              Question {currentQuestion + 1} of {getModuleQuestions()}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {answeredCount} answered
-            </span>
-          </div>
+          {/* Math Tools (only for Math sections) */}
+          {currentSection === 'math' && (
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://www.desmos.com/testing/cb-sat-ap/graphing', '_blank')}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <Calculator className="h-4 w-4 mr-2" />
+                CALCULATOR
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://testinnovators.com/sat/web-app/images/SATShapeResources.pdf', '_blank')}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                REFERENCE
+              </Button>
+            </div>
+          )}
           
+          {/* Question Navigation Bar */}
+          <div className="mt-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-slate-300 mr-2">Intro</span>
+              {Array.from({ length: getModuleQuestions() }, (_, index) => {
+                const isAnswered = answers[index] !== null;
+                const isFlagged = flagged.has(index);
+                const isCurrent = currentQuestion === index;
+                
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setCurrentQuestion(index);
+                      setSelectedAnswer(answers[index]);
+                    }}
+                    className={`
+                      w-8 h-8 rounded-lg border-2 text-sm font-medium transition-all relative
+                      ${isCurrent 
+                        ? 'bg-blue-500 border-blue-500 text-white' 
+                        : isAnswered 
+                        ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
+                        : 'bg-white border-slate-300 text-slate-700 hover:border-blue-300'
+                      }
+                    `}
+                  >
+                    {index + 1}
+                    {isFlagged && (
+                      <Flag className="absolute -top-1 -right-1 h-3 w-3 text-orange-500 fill-current" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="bg-card border-b px-6 py-2">
+        <div className="container mx-auto">
           <Progress value={progress} className="h-2" />
         </div>
       </div>
