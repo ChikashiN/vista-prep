@@ -57,6 +57,10 @@ export default function Practice() {
   const navigate = useNavigate();
   
   const settings = location.state || {};
+  const isRedoMode = settings.redoQuestions && settings.redoQuestions.length > 0;
+  const questionsToUse = isRedoMode ? settings.redoQuestions : sampleQuestions;
+  const questionCount = isRedoMode ? settings.redoQuestions.length : (settings.questionCount || 10);
+  
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
@@ -67,8 +71,8 @@ export default function Practice() {
 
   // Initialize answers array
   useEffect(() => {
-    setAnswers(new Array(settings.questionCount || 10).fill(null));
-  }, [settings.questionCount]);
+    setAnswers(new Array(questionCount).fill(null));
+  }, [questionCount]);
 
   // Timer effect - count up for sectional practice
   useEffect(() => {
@@ -95,7 +99,7 @@ export default function Practice() {
   };
 
   const handleNext = () => {
-    if (currentQuestion < (settings.questionCount || 10) - 1) {
+    if (currentQuestion < questionCount - 1) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(answers[currentQuestion + 1]);
     }
@@ -122,16 +126,16 @@ export default function Practice() {
     setIsCompleted(true);
   };
 
-  const currentQ = sampleQuestions[currentQuestion % sampleQuestions.length];
-  const progress = ((currentQuestion + 1) / (settings.questionCount || 10)) * 100;
+  const currentQ = questionsToUse[currentQuestion % questionsToUse.length];
+  const progress = ((currentQuestion + 1) / questionCount) * 100;
   const answeredCount = answers.filter(a => a !== null).length;
 
   if (isCompleted) {
     const score = answers.filter((answer, index) => {
-      const q = sampleQuestions[index % sampleQuestions.length];
+      const q = questionsToUse[index % questionsToUse.length];
       return answer === q.correctAnswer;
     }).length;
-    const percentage = Math.round((score / (settings.questionCount || 10)) * 100);
+    const percentage = Math.round((score / questionCount) * 100);
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -146,7 +150,7 @@ export default function Practice() {
             <div className="space-y-4">
               <div className="text-4xl font-bold text-primary">{percentage}%</div>
               <div className="text-muted-foreground">
-                {score} out of {settings.questionCount || 10} correct
+                {score} out of {questionCount} correct
               </div>
             </div>
 
@@ -157,16 +161,16 @@ export default function Practice() {
                 onClick={() => {
                   // Handle retry incorrect questions
                   const incorrectQuestions = answers.map((answer, index) => {
-                    const q = sampleQuestions[index % sampleQuestions.length];
-                    return answer !== q.correctAnswer ? index : null;
-                  }).filter(i => i !== null);
+                    const q = questionsToUse[index % questionsToUse.length];
+                    return answer !== q.correctAnswer ? q : null;
+                  }).filter(q => q !== null);
                   
                   if (incorrectQuestions.length > 0) {
                     navigate(`/practice/${section}`, {
                       state: {
                         ...settings,
-                        questionCount: incorrectQuestions.length,
-                        retryMode: true
+                        redoQuestions: incorrectQuestions,
+                        questionCount: incorrectQuestions.length
                       }
                     });
                   }
@@ -180,7 +184,7 @@ export default function Practice() {
                 onClick={() => {
                   // Navigate to diagnostics view with sample data
                   const diagnosticQuestions = answers.map((answer, index) => {
-                    const q = sampleQuestions[index % sampleQuestions.length];
+                    const q = questionsToUse[index % questionsToUse.length];
                     return {
                       ...q,
                       userAnswer: answer,
@@ -237,7 +241,7 @@ export default function Practice() {
           
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">
-              Question {currentQuestion + 1} of {settings.questionCount || 10}
+              Question {currentQuestion + 1} of {questionCount}
             </span>
             <span className="text-sm text-muted-foreground">
               {answeredCount} answered
@@ -335,7 +339,7 @@ export default function Practice() {
                 Previous
               </Button>
 
-              {currentQuestion === (settings.questionCount || 10) - 1 ? (
+              {currentQuestion === questionCount - 1 ? (
                 <Button
                   onClick={handleSubmit}
                   className="rounded-xl bg-gradient-primary shadow-glow"

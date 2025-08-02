@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle, Menu } from "lucide-react";
 
 interface Question {
   id: number;
@@ -57,6 +57,9 @@ export default function FullTest() {
   const [currentSection, setCurrentSection] = useState<"reading" | "math">("reading");
   const [showReview, setShowReview] = useState(false);
   const [savedState, setSavedState] = useState<any>(null);
+  const [showFlaggedPanel, setShowFlaggedPanel] = useState(false);
+  const [module1Score, setModule1Score] = useState<number | null>(null);
+  const [shouldUseHardModule2, setShouldUseHardModule2] = useState(false);
 
   const getModuleQuestions = () => {
     if (settings.mode === "full-reading") {
@@ -165,6 +168,18 @@ export default function FullTest() {
 
   const proceedToNextModule = () => {
     if (currentModule === 1) {
+      // Calculate Module 1 score for adaptive testing
+      const correctAnswers = answers.filter((answer, index) => {
+        const q = sampleQuestions[index % sampleQuestions.length];
+        return answer === q.correctAnswer;
+      }).length;
+      
+      setModule1Score(correctAnswers);
+      
+      // Determine if Module 2 should be harder based on thresholds
+      const threshold = currentSection === "reading" ? 19 : 15; // R&W: 19/27, Math: 15/22
+      setShouldUseHardModule2(correctAnswers >= threshold);
+      
       // Start Module 2
       setCurrentModule(2);
       setCurrentQuestion(0);
@@ -348,27 +363,90 @@ export default function FullTest() {
       const q = sampleQuestions[index % sampleQuestions.length];
       return answer === q.correctAnswer;
     }).length;
-    const percentage = Math.round((score / getModuleQuestions()) * 100);
+    
+    // Calculate SAT scaled scores (simulated)
+    const rawScore = score;
+    const totalQuestions = getModuleQuestions();
+    const percentage = Math.round((rawScore / totalQuestions) * 100);
+    
+    // Simulate SAT scoring conversion (800 max per section)
+    const scaledScore = Math.round((percentage / 100) * 800);
+    const totalSATScore = currentSection === "reading" ? scaledScore + 400 : 800 + scaledScore; // Simulate total
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl bg-gradient-card shadow-glow">
+        <Card className="w-full max-w-3xl bg-gradient-card shadow-glow">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Test Complete!</CardTitle>
+            <p className="text-muted-foreground">
+              {settings.mode === "full-test" ? "Full SAT Practice Test" : 
+               settings.mode === "full-reading" ? "Reading & Writing Section" : "Math Section"}
+            </p>
           </CardHeader>
-          <CardContent className="space-y-6 text-center">
-            <div className="space-y-4">
-              <div className="text-4xl font-bold text-primary">{percentage}%</div>
-              <div className="text-muted-foreground">
-                {score} out of {getModuleQuestions()} correct
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+              <div className="space-y-2">
+                <div className="text-3xl font-bold text-primary">{scaledScore}</div>
+                <div className="text-sm text-muted-foreground">Section Score</div>
+                <div className="text-xs text-muted-foreground">out of 800</div>
+              </div>
+              
+              {settings.mode === "full-test" && (
+                <div className="space-y-2">
+                  <div className="text-3xl font-bold text-primary">{totalSATScore}</div>
+                  <div className="text-sm text-muted-foreground">Total Score</div>
+                  <div className="text-xs text-muted-foreground">out of 1600</div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">{percentage}%</div>
+                <div className="text-sm text-muted-foreground">Accuracy</div>
+                <div className="text-xs text-muted-foreground">{rawScore}/{totalQuestions} correct</div>
               </div>
             </div>
+
+            {module1Score && (
+              <div className="border-t pt-4">
+                <h3 className="font-medium mb-3">Module Performance</h3>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div className="space-y-2">
+                    <div className="text-lg font-bold">Module 1</div>
+                    <div className="text-sm text-muted-foreground">{module1Score}/{getModuleQuestions()} correct</div>
+                    <Badge variant={shouldUseHardModule2 ? "default" : "secondary"}>
+                      {shouldUseHardModule2 ? "Advanced to Hard Module 2" : "Standard Module 2"}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-lg font-bold">Module 2</div>
+                    <div className="text-sm text-muted-foreground">{rawScore - (module1Score || 0)}/{getModuleQuestions()} correct</div>
+                    <Badge variant="outline">
+                      {shouldUseHardModule2 ? "Hard Difficulty" : "Standard Difficulty"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button variant="outline" className="rounded-xl" onClick={() => navigate('/dashboard')}>
                 🏠 Return to Dashboard
               </Button>
-              <Button variant="default" className="rounded-xl" onClick={() => navigate('/test')}>
+              <Button 
+                variant="default" 
+                className="rounded-xl"
+                onClick={() => navigate('/diagnostics', { 
+                  state: { 
+                    questions: sampleQuestions.slice(0, totalQuestions).map((q, i) => ({
+                      ...q,
+                      userAnswer: answers[i],
+                      explanation: `This is a sample explanation for ${q.domain} question about ${q.question.substring(0, 30)}...`
+                    })),
+                    totalScore: scaledScore,
+                    sectionType: currentSection
+                  }
+                })}
+              >
                 📈 View Full Diagnostics
               </Button>
             </div>
@@ -391,6 +469,17 @@ export default function FullTest() {
               {currentSection === "reading" ? "Reading & Writing" : "Math"} - Module {currentModule}
             </div>
             <div className="flex items-center gap-4">
+              {flagged.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFlaggedPanel(!showFlaggedPanel)}
+                  className="text-xs rounded-lg"
+                >
+                  <Menu className="h-3 w-3 mr-1" />
+                  Flagged ({flagged.size})
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -426,7 +515,7 @@ export default function FullTest() {
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Flagged questions sidebar */}
-          {flagged.size > 0 && (
+          {flagged.size > 0 && showFlaggedPanel && (
             <div className="lg:col-span-1 order-first lg:order-none">
               <Card className="bg-gradient-card shadow-card sticky top-24">
                 <CardHeader>
@@ -463,7 +552,7 @@ export default function FullTest() {
             </div>
           )}
 
-        <div className={`${flagged.size > 0 ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 lg:grid-cols-2 gap-8`}>
+        <div className={`${flagged.size > 0 && showFlaggedPanel ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 lg:grid-cols-2 gap-8`}>
           {/* Question and passage */}
           <div className="space-y-6">
             {currentQ.passage && (
