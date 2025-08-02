@@ -886,25 +886,8 @@ export default function FullTest() {
                       const isEliminated = eliminatedChoices.has(choiceKey);
                       
                       return (
-                        <div key={index} className="relative">
-                          <button
-                            onClick={() => !isEliminated && handleAnswerSelect(index)}
-                            disabled={isEliminated}
-                            className={`w-full p-4 text-left rounded-lg border transition-all ${
-                              selectedAnswer === index && !isEliminated
-                                ? 'border-primary bg-primary/10 shadow-glow'
-                                : isEliminated
-                                ? 'border-border bg-muted/30 opacity-50 line-through'
-                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                            }`}
-                          >
-                            <span className="font-medium mr-3">
-                              {String.fromCharCode(65 + index)}.
-                            </span>
-                            {choice}
-                          </button>
-                          
-                          {/* Elimination button */}
+                        <div key={index} className="flex items-center gap-3">
+                          {/* Elimination X button */}
                           <button
                             onClick={() => {
                               const newEliminated = new Set(eliminatedChoices);
@@ -921,10 +904,31 @@ export default function FullTest() {
                               }
                               setEliminatedChoices(newEliminated);
                             }}
-                            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-bold transition-colors"
+                            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
+                              isEliminated 
+                                ? 'bg-destructive text-destructive-foreground border-destructive' 
+                                : 'bg-muted hover:bg-destructive/10 border-border hover:border-destructive'
+                            }`}
                             title={isEliminated ? "Restore option" : "Eliminate option"}
                           >
-                            ×
+                            <span className="text-sm font-bold">×</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => !isEliminated && handleAnswerSelect(index)}
+                            disabled={isEliminated}
+                            className={`flex-1 p-4 text-left rounded-lg border transition-all ${
+                              selectedAnswer === index && !isEliminated
+                                ? 'border-primary bg-primary/10 shadow-glow'
+                                : isEliminated
+                                ? 'border-border bg-muted/30 opacity-50 line-through'
+                                : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                            }`}
+                          >
+                            <span className="font-medium mr-3">
+                              {String.fromCharCode(65 + index)}.
+                            </span>
+                            {choice}
                           </button>
                         </div>
                       );
