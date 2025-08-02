@@ -831,9 +831,9 @@ export default function FullTest() {
           )}
           
           {/* Question Navigation Bar */}
-          <div className="bg-white/95 backdrop-blur-sm border border-white/20 rounded-xl p-4 mt-4">
+          <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-4 shadow-card">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-white/70 font-medium">Questions:</span>
+              <span className="text-sm text-muted-foreground font-medium">Questions:</span>
               {Array.from({ length: getModuleQuestions() }, (_, index) => {
                 const isAnswered = answers[index] !== null;
                 const isFlagged = flagged.has(index);
