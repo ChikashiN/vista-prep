@@ -767,15 +767,14 @@ export default function FullTest() {
     <div className="min-h-screen bg-background">
       <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
-      {/* Header with SAT-style layout */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+      {/* Header with section info */}
+      <div className="bg-gradient-primary text-white shadow-glow">
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-bold">DIGITAL SAT PRACTICE TEST</h1>
-              <p className="text-slate-300 text-sm mt-1">
-                {currentSection.toUpperCase() === "READING" ? "READING AND WRITING" : "MATH"}: MODULE {currentModule}
-              </p>
+              <h1 className="text-xl font-bold">
+                {currentSection === "reading" ? "Reading and Writing" : "Math"}: Module {currentModule}
+              </h1>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
@@ -816,7 +815,7 @@ export default function FullTest() {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
                 <Calculator className="h-4 w-4 mr-2" />
-                CALCULATOR
+                Calculator
               </Button>
               <Button
                 variant="outline"
@@ -825,45 +824,63 @@ export default function FullTest() {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
                 <FileText className="h-4 w-4 mr-2" />
-                REFERENCE
+                Reference
               </Button>
             </div>
           )}
-          
-          {/* Question Navigation Bar */}
-          <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-4 shadow-card">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-muted-foreground font-medium">Questions:</span>
-              {Array.from({ length: getModuleQuestions() }, (_, index) => {
-                const isAnswered = answers[index] !== null;
-                const isFlagged = flagged.has(index);
-                const isCurrent = currentQuestion === index;
-                
-                return (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setCurrentQuestion(index);
-                      setSelectedAnswer(answers[index]);
-                    }}
-                    className={`
-                      relative w-8 h-8 rounded-full text-sm font-medium transition-all duration-200
-                      ${isCurrent 
-                        ? 'bg-primary text-primary-foreground shadow-glow ring-2 ring-primary/30' 
-                        : isAnswered 
-                        ? 'bg-success text-success-foreground shadow-soft' 
-                        : 'bg-muted border border-border text-muted-foreground hover:bg-primary/10 hover:border-primary hover:text-primary hover:scale-105'
-                      }
-                    `}
-                  >
-                    {index + 1}
-                    {isFlagged && (
-                      <Flag className="absolute -top-1 -right-1 h-3 w-3 text-warning fill-warning" />
-                    )}
-                  </button>
-                );
-              })}
+        </div>
+      </div>
+
+      {/* Question Navigation Bar */}
+      <div className="border-b bg-white shadow-sm">
+        <div className="container mx-auto px-6 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Question Navigation</span>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span>Answered</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full border-2 border-muted-foreground"></div>
+                <span>Unanswered</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Flag className="w-3 h-3 text-orange-500" />
+                <span>Flagged</span>
+              </div>
             </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: getModuleQuestions() }, (_, index) => {
+              const isAnswered = answers[index] !== null;
+              const isFlagged = flagged.has(index);
+              const isCurrent = currentQuestion === index;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setCurrentQuestion(index);
+                    setSelectedAnswer(answers[index]);
+                  }}
+                  className={`
+                    relative w-8 h-8 rounded-md text-xs font-medium transition-all duration-200
+                    ${isCurrent 
+                      ? 'bg-primary text-primary-foreground shadow-md' 
+                      : isAnswered 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border'
+                    }
+                  `}
+                >
+                  {index + 1}
+                  {isFlagged && (
+                    <Flag className="absolute -top-1 -right-1 w-2.5 h-2.5 text-orange-500" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
