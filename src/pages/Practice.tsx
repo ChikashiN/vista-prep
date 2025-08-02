@@ -238,7 +238,7 @@ export default function Practice() {
                     variant="outline" 
                     size="sm"
                     onClick={() => window.open('https://www.desmos.com/testing/cb-sat-ap/graphing', '_blank')}
-                    className="text-xs px-2 py-1 h-auto"
+                    className="text-xs px-3 py-1.5"
                   >
                     🧮 Calculator
                   </Button>
@@ -246,7 +246,7 @@ export default function Practice() {
                     variant="outline" 
                     size="sm"
                     onClick={() => window.open('https://testinnovators.com/sat/web-app/images/SATShapeResources.pdf', '_blank')}
-                    className="text-xs px-2 py-1 h-auto"
+                    className="text-xs px-3 py-1.5"
                   >
                     📐 Reference
                   </Button>
