@@ -51,15 +51,25 @@ const sampleQuestions: Question[] = [
   }
 ];
 
-// Helper function to get domain title for Math sections
-const getDomainTitle = (domain: string): string => {
-  const domainMap: { [key: string]: string } = {
-    'algebra': 'Algebra',
-    'advanced-math': 'Advanced Math',
-    'problem-solving': 'Problem-Solving and Data Analysis',
-    'geometry': 'Geometry and Trigonometry'
-  };
-  return domainMap[domain] || 'Algebra';
+// Helper function to get domain title for all sections
+const getDomainTitle = (domain: string, section: string): string => {
+  if (section === 'math') {
+    const mathDomainMap: { [key: string]: string } = {
+      'algebra': 'Algebra',
+      'advanced-math': 'Advanced Math',
+      'problem-solving': 'Problem-Solving and Data Analysis',
+      'geometry': 'Geometry and Trigonometry'
+    };
+    return mathDomainMap[domain] || 'Algebra';
+  } else {
+    const readingDomainMap: { [key: string]: string } = {
+      'information-ideas': 'Information and Ideas',
+      'craft-structure': 'Craft and Structure',
+      'expression-ideas': 'Expression of Ideas',
+      'standard-conventions': 'Standard English Conventions'
+    };
+    return readingDomainMap[domain] || 'Information and Ideas';
+  }
 };
 
 export default function Practice() {
@@ -239,10 +249,7 @@ export default function Practice() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold">
-                {section === 'reading' 
-                  ? 'Sectional Practice: Reading and Writing' 
-                  : `Sectional Practice: ${getDomainTitle(settings.domain || 'algebra')}`
-                }
+                Sectional Practice: {getDomainTitle(settings.domains?.[0] || (section === 'math' ? 'algebra' : 'information-ideas'), section || 'math')}
               </h1>
             </div>
             {settings.timedMode && (
