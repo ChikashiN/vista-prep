@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle, Calculator, FileText } from "lucide-react";
 
 interface Question {
   id: number;
@@ -50,6 +50,17 @@ const sampleQuestions: Question[] = [
     difficulty: "Easy"
   }
 ];
+
+// Helper function to get domain title for Math sections
+const getDomainTitle = (domain: string): string => {
+  const domainMap: { [key: string]: string } = {
+    'algebra': 'Algebra',
+    'advanced-math': 'Advanced Math',
+    'problem-solving': 'Problem-Solving and Data Analysis',
+    'geometry': 'Geometry and Trigonometry'
+  };
+  return domainMap[domain] || 'Algebra';
+};
 
 export default function Practice() {
   const { section } = useParams();
@@ -222,83 +233,112 @@ export default function Practice() {
     <div className="min-h-screen bg-background">
       <Header streak={5} totalScore={1250} currentXP={250} level={3} />
       
-      {/* Header with progress and timer */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-muted-foreground">
-                {section === 'reading' ? 'Reading & Writing' : 'Math'} Practice
-              </div>
-              
-              {/* Math section tools */}
-              {section === 'math' && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.open('https://www.desmos.com/testing/cb-sat-ap/graphing', '_blank')}
-                    className="text-xs px-3 py-1.5"
-                  >
-                    🧮 Calculator
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.open('https://testinnovators.com/sat/web-app/images/SATShapeResources.pdf', '_blank')}
-                    className="text-xs px-3 py-1.5"
-                  >
-                    📐 Reference
-                  </Button>
-                </div>
-              )}
+      {/* Header with section info - matching Full Test layout */}
+      <div className="bg-gradient-primary text-white shadow-glow">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-bold">
+                {section === 'reading' 
+                  ? 'Sectional Practice: Reading and Writing' 
+                  : `Sectional Practice: ${getDomainTitle(settings.domain || 'algebra')}`
+                }
+              </h1>
             </div>
-            
             {settings.timedMode && (
-              <div className="flex items-center gap-2 text-sm">
-                <Timer className="h-4 w-4" />
-                <span>
+              <div className="text-right">
+                <p className="text-xs text-slate-300">TIME ELAPSED</p>
+                <div className="bg-white text-slate-900 px-3 py-1 rounded-full font-mono text-sm">
                   {formatTime(timeElapsed)}
-                </span>
+                </div>
               </div>
             )}
           </div>
           
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">
-              Question {currentQuestion + 1} of {questionCount}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {answeredCount} answered
-            </span>
-          </div>
-          
-          {/* Question number navigation */}
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            {Array.from({ length: questionCount }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setCurrentQuestion(i);
-                  setSelectedAnswer(answers[i]);
-                }}
-                className={`w-8 h-8 rounded-lg text-xs font-medium border-2 transition-all relative ${
-                  i === currentQuestion
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : answers[i] !== null
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-muted-foreground/30 hover:border-primary/50'
-                }`}
+          {/* Math Tools (only for Math sections) - matching Full Test position */}
+          {section === 'math' && (
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://www.desmos.com/testing/cb-sat-ap/graphing', '_blank')}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
-                {i + 1}
-                {flagged.has(i) && (
-                  <Flag className="h-3 w-3 text-warning absolute -top-1 -right-1 fill-current" />
-                )}
-              </button>
-            ))}
+                <Calculator className="h-4 w-4 mr-2" />
+                Calculator
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('https://testinnovators.com/sat/web-app/images/SATShapeResources.pdf', '_blank')}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Reference
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Question Navigation Bar - matching Full Test layout */}
+      <div className="border-b bg-white shadow-sm">
+        <div className="container mx-auto px-6 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-muted-foreground">Question Navigation</span>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span>Answered</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full border-2 border-muted-foreground"></div>
+                <span>Unanswered</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Flag className="w-3 h-3 text-orange-500" />
+                <span>Flagged</span>
+              </div>
+            </div>
           </div>
-          
-          <Progress value={progress} className="h-2" />
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: questionCount }, (_, index) => {
+              const isAnswered = answers[index] !== null;
+              const isFlagged = flagged.has(index);
+              const isCurrent = currentQuestion === index;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setCurrentQuestion(index);
+                    setSelectedAnswer(answers[index]);
+                  }}
+                  className={`
+                    relative w-8 h-8 rounded-md text-xs font-medium transition-all duration-200
+                    ${isCurrent 
+                      ? 'bg-primary text-primary-foreground shadow-md' 
+                      : isAnswered 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border'
+                    }
+                  `}
+                >
+                  {index + 1}
+                  {isFlagged && (
+                    <Flag className="absolute -top-0.5 -right-0.5 w-3 h-3 text-orange-500 fill-orange-500 drop-shadow-sm" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar - matching Full Test layout */}
+      <div className="border-b bg-muted/20">
+        <div className="container mx-auto px-6">
+          <Progress value={progress} className="h-1" />
         </div>
       </div>
 
