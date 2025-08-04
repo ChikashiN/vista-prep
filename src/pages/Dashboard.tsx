@@ -10,9 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, Calculator, Target, Users, Trophy, TrendingUp, Play, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [dailyChallengeCompleted, setDailyChallengeCompleted] = useState(false);
   
   // Mock user data
   const userData = {
@@ -199,7 +201,10 @@ export default function Dashboard() {
           {/* Sidebar - Right column */}
           <div className="space-y-6">
             {/* Daily Challenge */}
-            <DailyChallenge isCompleted={false} onStart={() => navigate('/practice')} />
+            <DailyChallenge 
+              isCompleted={dailyChallengeCompleted} 
+              onStart={() => setDailyChallengeCompleted(true)} 
+            />
 
             {/* Leaderboard */}
             <Card>
