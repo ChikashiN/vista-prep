@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Target, Clock, Star, ArrowLeft, ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { useTestData } from "@/hooks/useTestData";
+import { toast } from "sonner";
 
 interface Question {
   id: string;
@@ -67,6 +69,7 @@ export function DailyChallenge({ isCompleted, onStart }: DailyChallengeProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>(new Array(5).fill(-1));
   const [showResults, setShowResults] = useState(false);
+  const { addTestResult } = useTestData();
 
   const handleStart = () => {
     setIsActive(true);
@@ -96,6 +99,21 @@ export function DailyChallenge({ isCompleted, onStart }: DailyChallengeProps) {
   };
 
   const handleFinish = () => {
+    const score = calculateScore();
+    
+    // Track the test result
+    addTestResult({
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+      type: 'daily',
+      section: 'both',
+      domain: 'Mixed Practice',
+      totalQuestions: 5,
+      correctAnswers: score,
+      timeSpent: 300 // Estimated 5 minutes
+    });
+
+    toast.success(`Daily Challenge Complete! You scored ${score}/5 questions correctly and earned ${score * 10} XP!`);
+    
     setIsActive(false);
     setShowResults(false);
     onStart(); // This will mark as completed in parent component

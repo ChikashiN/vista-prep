@@ -2,44 +2,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTestData } from "@/hooks/useTestData";
 
 interface PerformanceDashboardProps {
   className?: string;
 }
 
-// Mock data for the performance dashboard
-const previousScores = [
-  {
-    date: "August 06",
-    scoreRange: "1360-1560",
-    readingScore: 680,
-    mathScore: 780
-  },
-  {
-    date: "July 30", 
-    scoreRange: "1310-1510",
-    readingScore: 650,
-    mathScore: 760
-  },
-  {
-    date: "July 23",
-    scoreRange: "1240-1440", 
-    readingScore: 620,
-    mathScore: 720
-  }
-];
-
-const questionSummaryData = [
-  { period: "07/13-07/20", attempted: 180, correct: 162, percentage: 90 },
-  { period: "07/20-07/27", attempted: 98, correct: 88, percentage: 90 },
-  { period: "07/27-08/03", attempted: 92, correct: 82, percentage: 89 },
-  { period: "08/03-08/10", attempted: 98, correct: 95, percentage: 97 },
-  { period: "08/10-08/17", attempted: 5, correct: 5, percentage: 100 }
-];
-
 export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
-  const totalAttempted = 455 + 35;
-  const accuracyPercentage = Math.round((455 / totalAttempted) * 100);
+  const { 
+    getRecentScores, 
+    getWeeklyData, 
+    getOverallAccuracy, 
+    getStrongestAndWeakest 
+  } = useTestData();
+
+  const recentScores = getRecentScores();
+  const weeklyData = getWeeklyData();
+  const overallAccuracy = getOverallAccuracy();
+  const { strongest, weakest } = getStrongestAndWeakest();
+
+  // Show default message if no data
+  if (recentScores.length === 0) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle>Your Digital SAT Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">No test data available yet.</p>
+            <p className="text-sm text-muted-foreground">Complete some practice tests or take the full SAT to see your performance data here.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className={`space-y-8 ${className || ''}`}>
@@ -50,7 +47,7 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
         <div className="space-y-4 mb-8">
           <h3 className="text-lg font-semibold text-muted-foreground">PREVIOUS SCORES</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {previousScores.map((score, index) => (
+            {recentScores.map((score, index) => (
               <Card key={index} className="relative">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
@@ -92,20 +89,20 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-center">
-                              <div className="text-sm font-bold">{score.readingScore + score.mathScore}</div>
-                              <div className="text-xs text-muted-foreground">/ 1600</div>
-                            </div>
+                           <div className="text-center">
+                             <div className="text-sm font-bold">{score.totalScore}</div>
+                             <div className="text-xs text-muted-foreground">/ 1600</div>
+                           </div>
                           </div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <div className="text-center">
-                          <div className="font-semibold">Score Breakdown</div>
-                          <div className="text-sm">Reading: {score.readingScore}</div>
-                          <div className="text-sm">Math: {score.mathScore}</div>
-                          <div className="text-sm">Total: {score.readingScore + score.mathScore}</div>
-                        </div>
+                          <div className="text-center">
+                            <div className="font-semibold">Score Breakdown</div>
+                            <div className="text-sm">Reading: {score.readingScore}</div>
+                            <div className="text-sm">Math: {score.mathScore}</div>
+                            <div className="text-sm">Total: {score.totalScore}</div>
+                          </div>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -125,7 +122,7 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="text-center mb-6">
-                <div className="text-lg font-semibold mb-2">455 correct out of 490</div>
+                <div className="text-lg font-semibold mb-2">{overallAccuracy.totalCorrect} correct out of {overallAccuracy.totalQuestions}</div>
                 
                 {/* Enhanced animated accuracy chart */}
                 <TooltipProvider>
@@ -147,7 +144,7 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
                             fill="none"
                             stroke="hsl(var(--primary))"
                             strokeWidth="4"
-                            strokeDasharray={`${accuracyPercentage * 1.13}, 113`}
+                            strokeDasharray={`${overallAccuracy.percentage * 1.13}, 113`}
                             strokeLinecap="round"
                             className="transition-all duration-2000 ease-out"
                           />
@@ -163,20 +160,20 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
                         {/* Animated center content */}
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-center transition-transform group-hover:scale-105">
-                            <div className="text-4xl font-bold text-primary animate-pulse">{accuracyPercentage}%</div>
+                            <div className="text-4xl font-bold text-primary animate-pulse">{overallAccuracy.percentage}%</div>
                             <div className="text-xs text-muted-foreground mt-1">Accuracy</div>
                           </div>
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="text-center">
-                        <div className="font-semibold">Accuracy Details</div>
-                        <div className="text-sm">455 correct answers</div>
-                        <div className="text-sm">35 incorrect answers</div>
-                        <div className="text-sm">490 total questions</div>
-                      </div>
-                    </TooltipContent>
+                      <TooltipContent>
+                        <div className="text-center">
+                          <div className="font-semibold">Accuracy Details</div>
+                          <div className="text-sm">{overallAccuracy.totalCorrect} correct answers</div>
+                          <div className="text-sm">{overallAccuracy.totalQuestions - overallAccuracy.totalCorrect} incorrect answers</div>
+                          <div className="text-sm">{overallAccuracy.totalQuestions} total questions</div>
+                        </div>
+                      </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
@@ -190,7 +187,7 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {questionSummaryData.map((data, index) => (
+                {weeklyData.length > 0 ? weeklyData.map((data, index) => (
                   <TooltipProvider key={index}>
                     <Tooltip>
                       <TooltipTrigger className="w-full">
@@ -237,7 +234,12 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                ))}
+                )) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p>No weekly data available yet.</p>
+                    <p className="text-sm">Complete more practice sessions to see weekly trends.</p>
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center justify-center gap-6 mt-6 text-sm">
@@ -260,11 +262,11 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="bg-green-500 text-white px-3 py-1 rounded font-bold text-lg">
-                  100%
+                  {strongest.accuracy}%
                 </div>
                 <div>
                   <div className="font-medium text-green-800">Strongest Section:</div>
-                  <div className="text-sm text-green-600">Linear Equations In 1 Variable</div>
+                  <div className="text-sm text-green-600">{strongest.domain}</div>
                 </div>
               </div>
             </CardContent>
@@ -274,11 +276,11 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="bg-red-500 text-white px-3 py-1 rounded font-bold text-lg">
-                  70%
+                  {weakest.accuracy}%
                 </div>
                 <div>
                   <div className="font-medium text-red-800">Weakest Section:</div>
-                  <div className="text-sm text-red-600">Command Of Evidence: Textual</div>
+                  <div className="text-sm text-red-600">{weakest.domain}</div>
                 </div>
               </div>
             </CardContent>
