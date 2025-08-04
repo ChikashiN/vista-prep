@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle, Calculator, FileText } from "lucide-react";
+import { useTestData } from "@/hooks/useTestData";
 
 interface Question {
   id: number;
@@ -76,6 +77,7 @@ export default function Practice() {
   const { section } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { addTestResult } = useTestData();
   
   const settings = location.state || {};
   const isRedoMode = settings.redoQuestions && settings.redoQuestions.length > 0;
@@ -144,6 +146,23 @@ export default function Practice() {
   };
 
   const handleSubmit = () => {
+    // Calculate score
+    const correctAnswers = answers.filter((answer, index) => {
+      const q = questionsToUse[index % questionsToUse.length];
+      return answer === q.correctAnswer;
+    }).length;
+
+    // Add test result to tracking data
+    addTestResult({
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+      type: 'sectional',
+      section: section === 'math' ? 'math' : 'reading',
+      domain: settings.domains?.[0] || (section === 'math' ? 'algebra' : 'information-ideas'),
+      totalQuestions: questionCount,
+      correctAnswers,
+      timeSpent: timeElapsed
+    });
+
     setIsCompleted(true);
   };
 

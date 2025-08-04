@@ -138,7 +138,20 @@ export function useTestData() {
       }
     }
     
-    return weeklyData;
+    // Always show at least 3 weeks with data or placeholders
+    while (weeklyData.length < 3) {
+      const lastDate = weeklyData.length > 0 ? new Date(weeklyData[weeklyData.length - 1].period.split('-')[0]) : now;
+      lastDate.setDate(lastDate.getDate() - 7);
+      
+      weeklyData.push({
+        period: `${String(lastDate.getMonth() + 1).padStart(2, '0')}/${String(lastDate.getDate()).padStart(2, '0')}-${String(lastDate.getMonth() + 1).padStart(2, '0')}/${String(lastDate.getDate() + 6).padStart(2, '0')}`,
+        attempted: 0,
+        correct: 0,
+        percentage: 0
+      });
+    }
+    
+    return weeklyData.slice(0, 5); // Show latest 5 weeks
   };
 
   const getOverallAccuracy = () => {
@@ -155,6 +168,18 @@ export function useTestData() {
   const getDomainAccuracy = (): DomainAccuracy[] => {
     const domainMap = new Map<string, { correct: number; total: number; previous: number }>();
     
+    // Convert domain keys to readable names
+    const domainNames: { [key: string]: string } = {
+      'information-ideas': 'Information and Ideas',
+      'craft-structure': 'Craft and Structure', 
+      'expression-ideas': 'Expression of Ideas',
+      'standard-conventions': 'Standard English Conventions',
+      'algebra': 'Algebra',
+      'advanced-math': 'Advanced Math',
+      'problem-solving': 'Problem-Solving and Data Analysis',
+      'geometry': 'Geometry and Trigonometry'
+    };
+    
     testResults.forEach(result => {
       if (result.domain) {
         const current = domainMap.get(result.domain) || { correct: 0, total: 0, previous: 0 };
@@ -168,14 +193,15 @@ export function useTestData() {
     
     return Array.from(domainMap.entries()).map(([domain, data]) => {
       const accuracy = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+      const displayName = domainNames[domain] || domain;
       return {
-        domain,
+        domain: displayName,
         accuracy,
         improvement: `+${Math.floor(Math.random() * 10)}%`, // Placeholder - would need historical data
         totalQuestions: data.total,
         correctAnswers: data.correct
       };
-    });
+    }).sort((a, b) => b.accuracy - a.accuracy); // Sort by accuracy descending
   };
 
   const getStrongestAndWeakest = () => {

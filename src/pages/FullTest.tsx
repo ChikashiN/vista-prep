@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle, Menu, FileText, Pause, Square } from "lucide-react";
+import { useTestData } from "@/hooks/useTestData";
 
 interface Question {
   id: number;
@@ -43,6 +44,7 @@ const sampleQuestions: Question[] = [
 export default function FullTest() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { addTestResult } = useTestData();
   const settings = location.state || {};
   
   const [currentModule, setCurrentModule] = useState(1);
@@ -686,21 +688,53 @@ export default function FullTest() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/practice')}
+                  onClick={() => {
+                    // Add test result to tracking data before navigating
+                    addTestResult({
+                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+                      type: 'full',
+                      section: 'both',
+                      totalQuestions: scores.totalQuestions,
+                      correctAnswers: scores.totalCorrect,
+                      score: {
+                        reading: readingScore,
+                        math: mathScore,
+                        total: totalScore
+                      },
+                      timeSpent: 7200 // 2 hours for full test (approx)
+                    });
+                    navigate('/practice');
+                  }}
                   className="rounded-xl"
                 >
                   More Practice
                 </Button>
                 <Button 
                   variant="default" 
-                  onClick={() => navigate('/diagnostics', { 
-                    state: { 
-                      questions: sampleQuestions.map((q, index) => ({
+                  onClick={() => {
+                    // Add test result to tracking data before navigating
+                    addTestResult({
+                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+                      type: 'full',
+                      section: 'both',
+                      totalQuestions: scores.totalQuestions,
+                      correctAnswers: scores.totalCorrect,
+                      score: {
+                        reading: readingScore,
+                        math: mathScore,
+                        total: totalScore
+                      },
+                      timeSpent: 7200 // 2 hours for full test (approx)
+                    });
+                     navigate('/diagnostics', { 
+                       state: { 
+                         questions: sampleQuestions.map((q, index) => ({
                         ...q,
                         userAnswer: answers[index] || null
                       }))
-                    }
-                  })}
+                     }
+                    });
+                  }}
                   className="rounded-xl bg-gradient-primary shadow-glow"
                 >
                   View Detailed Diagnostic
@@ -756,21 +790,45 @@ export default function FullTest() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/practice')}
+                  onClick={() => {
+                    // Add test result to tracking data before navigating
+                    addTestResult({
+                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+                      type: 'sectional',
+                      section: currentSection,
+                      totalQuestions: scores.totalQuestions,
+                      correctAnswers: scores.totalCorrect,
+                      score: currentSection === 'reading' ? { reading: sectionScore } : { math: sectionScore },
+                      timeSpent: currentSection === 'reading' ? 3840 : 4200 // 64min R&W, 70min Math
+                    });
+                    navigate('/practice');
+                  }}
                   className="rounded-xl"
                 >
                   More Practice
                 </Button>
                 <Button 
                   variant="default" 
-                  onClick={() => navigate('/diagnostics', { 
-                    state: { 
-                      questions: sampleQuestions.map((q, index) => ({
+                  onClick={() => {
+                    // Add test result to tracking data before navigating
+                    addTestResult({
+                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+                      type: 'sectional',
+                      section: currentSection,
+                      totalQuestions: scores.totalQuestions,
+                      correctAnswers: scores.totalCorrect,
+                      score: currentSection === 'reading' ? { reading: sectionScore } : { math: sectionScore },
+                      timeSpent: currentSection === 'reading' ? 3840 : 4200 // 64min R&W, 70min Math
+                    });
+                     navigate('/diagnostics', { 
+                       state: { 
+                         questions: sampleQuestions.map((q, index) => ({
                         ...q,
                         userAnswer: answers[index] || null
                       }))
-                    }
-                  })}
+                     }
+                    });
+                  }}
                   className="rounded-xl bg-gradient-primary shadow-glow"
                 >
                   View Diagnostic
