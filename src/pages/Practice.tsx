@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle, Calculator, FileText } from "lucide-react";
+import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle, Calculator, FileText, Trophy } from "lucide-react";
 import { useTestData } from "@/hooks/useTestData";
 
 interface Question {
@@ -152,8 +152,8 @@ export default function Practice() {
       return answer === q.correctAnswer;
     }).length;
 
-    // Add test result to tracking data
-    addTestResult({
+    // Add test result to tracking data and get XP earned
+    const xpEarned = addTestResult({
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
       type: 'sectional',
       section: section === 'math' ? 'math' : 'reading',
@@ -177,6 +177,12 @@ export default function Practice() {
     }).length;
     const percentage = Math.round((score / questionCount) * 100);
 
+    // Calculate XP breakdown
+    const baseXP = questionCount * 10; // +10 XP per answered question
+    const correctBonus = score * 5; // +5 XP per correct answer
+    const completionBonus = 50; // +50 XP for finishing practice set
+    const totalXP = baseXP + correctBonus + completionBonus;
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl bg-gradient-card shadow-glow">
@@ -193,6 +199,34 @@ export default function Practice() {
                 {score} out of {questionCount} correct
               </div>
             </div>
+
+            {/* XP Breakdown */}
+            <Card className="bg-muted/50">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  XP Earned: {totalXP}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Questions answered ({questionCount})</span>
+                  <span className="font-medium">+{baseXP} XP</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Correct answers ({score})</span>
+                  <span className="font-medium text-green-600">+{correctBonus} XP</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Practice completion</span>
+                  <span className="font-medium text-blue-600">+{completionBonus} XP</span>
+                </div>
+                <div className="border-t pt-2 flex justify-between font-bold">
+                  <span>Total XP</span>
+                  <span className="text-primary">+{totalXP} XP</span>
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button 
@@ -481,6 +515,9 @@ export default function Practice() {
           <AITutorChat 
             currentQuestion={currentQ.question}
             currentChoices={currentQ.choices}
+            currentPassage={currentQ.passage}
+            section={section as 'reading' | 'math'}
+            domain={currentQ.domain}
             onClose={() => setShowAITutor(false)}
           />
         )}

@@ -15,6 +15,17 @@ export interface TestResult {
   };
   timeSpent: number;
   completedAt: Date;
+  xpEarned?: number;
+}
+
+export interface UserData {
+  name: string;
+  level: number;
+  currentXP: number;
+  totalXP: number;
+  streak: number;
+  badge: string;
+  lastActivityDate: string;
 }
 
 export interface WeeklyData {
@@ -33,13 +44,47 @@ export interface DomainAccuracy {
 }
 
 const STORAGE_KEY = 'sat_performance_data';
+const USER_DATA_KEY = 'sat_user_data';
+
+// XP earning rules as specified
+const XP_RULES = {
+  ANSWERED_QUESTION: 10,
+  CORRECT_ANSWER_BONUS: 5,
+  FINISH_PRACTICE_SET: 50,
+  FINISH_FULL_TEST: 100,
+  STREAK_BONUS: 25
+};
+
+// Level thresholds (every 500 XP = 1 level)
+const XP_PER_LEVEL = 500;
+
+// Badge thresholds
+const BADGES = {
+  1: "SAT Rookie",
+  3: "SAT Explorer", 
+  5: "SAT Warrior",
+  8: "SAT Master",
+  12: "SAT Legend",
+  15: "SAT Champion"
+};
 
 export function useTestData() {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [userData, setUserData] = useState<UserData>({
+    name: "Alex",
+    level: 1,
+    currentXP: 0,
+    totalXP: 0,
+    streak: 0,
+    badge: "SAT Rookie",
+    lastActivityDate: new Date().toDateString()
+  });
 
   // Load data from localStorage on mount
   useEffect(() => {
     const storedData = localStorage.getItem(STORAGE_KEY);
+    const storedUserData = localStorage.getItem(USER_DATA_KEY);
+    
     if (storedData) {
       try {
         const parsed = JSON.parse(storedData);
@@ -62,7 +107,8 @@ export function useTestData() {
           correctAnswers: 108,
           score: { reading: 680, math: 780, total: 1460 },
           timeSpent: 7200,
-          completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+          completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+          xpEarned: 1340
         },
         {
           id: '2', 
@@ -73,10 +119,20 @@ export function useTestData() {
           correctAnswers: 98,
           score: { reading: 650, math: 760, total: 1410 },
           timeSpent: 7200,
-          completedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000)
+          completedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+          xpEarned: 1240
         }
       ];
       setTestResults(sampleData);
+    }
+
+    if (storedUserData) {
+      try {
+        const parsed = JSON.parse(storedUserData);
+        setUserData(parsed);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
     }
   }, []);
 
@@ -87,15 +143,110 @@ export function useTestData() {
     }
   }, [testResults]);
 
-  const addTestResult = (result: Omit<TestResult, 'id' | 'completedAt'>) => {
+  useEffect(() => {
+    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+  }, [userData]);
+
+  // Calculate XP earned based on performance
+  const calculateXPEarned = (totalQuestions: number, correctAnswers: number, type: 'full' | 'sectional' | 'daily') => {
+    let xp = 0;
+    
+    // Base XP for answered questions
+    xp += totalQuestions * XP_RULES.ANSWERED_QUESTION;
+    
+    // Bonus XP for correct answers
+    xp += correctAnswers * XP_RULES.CORRECT_ANSWER_BONUS;
+    
+    // Completion bonus
+    if (type === 'sectional' || type === 'daily') {
+      xp += XP_RULES.FINISH_PRACTICE_SET;
+    } else if (type === 'full') {
+      xp += XP_RULES.FINISH_FULL_TEST;
+    }
+    
+    return xp;
+  };
+
+  // Update user level and badge based on XP
+  const updateUserLevel = (newTotalXP: number) => {
+    const newLevel = Math.floor(newTotalXP / XP_PER_LEVEL) + 1;
+    const currentLevelXP = newTotalXP % XP_PER_LEVEL;
+    
+    // Determine badge
+    let newBadge = "SAT Rookie";
+    for (const [level, badge] of Object.entries(BADGES)) {
+      if (newLevel >= parseInt(level)) {
+        newBadge = badge;
+      }
+    }
+    
+    return {
+      level: newLevel,
+      currentXP: currentLevelXP,
+      totalXP: newTotalXP,
+      badge: newBadge
+    };
+  };
+
+  // Update streak
+  const updateStreak = () => {
+    const today = new Date().toDateString();
+    const lastActivity = new Date(userData.lastActivityDate);
+    const daysSinceLastActivity = Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceLastActivity === 1) {
+      // Consecutive day
+      const newStreak = userData.streak + 1;
+      const streakBonus = newStreak >= 3 ? XP_RULES.STREAK_BONUS : 0;
+      
+      setUserData(prev => ({
+        ...prev,
+        streak: newStreak,
+        lastActivityDate: today,
+        ...updateUserLevel(prev.totalXP + streakBonus)
+      }));
+      
+      return streakBonus;
+    } else if (daysSinceLastActivity === 0) {
+      // Same day, no streak update
+      return 0;
+    } else {
+      // Streak broken
+      setUserData(prev => ({
+        ...prev,
+        streak: 1,
+        lastActivityDate: today
+      }));
+      return 0;
+    }
+  };
+
+  const addTestResult = (result: Omit<TestResult, 'id' | 'completedAt' | 'xpEarned'>) => {
+    const xpEarned = calculateXPEarned(result.totalQuestions, result.correctAnswers, result.type);
+    const streakBonus = updateStreak();
+    const totalXPEarned = xpEarned + streakBonus;
+    
     const newResult: TestResult = {
       ...result,
       id: Date.now().toString(),
-      completedAt: new Date()
+      completedAt: new Date(),
+      xpEarned: totalXPEarned
     };
     
     setTestResults(prev => [...prev, newResult]);
+    
+    // Update user data with new XP
+    setUserData(prev => ({
+      ...prev,
+      ...updateUserLevel(prev.totalXP + totalXPEarned)
+    }));
+    
+    return totalXPEarned;
   };
+
+  const getUserData = () => userData;
+
+  const getNextLevelXP = () => (userData.level * XP_PER_LEVEL);
 
   const getRecentScores = (limit: number = 3) => {
     return testResults
@@ -231,6 +382,8 @@ export function useTestData() {
     getWeeklyData,
     getOverallAccuracy,
     getDomainAccuracy,
-    getStrongestAndWeakest
+    getStrongestAndWeakest,
+    getUserData,
+    getNextLevelXP
   };
 }

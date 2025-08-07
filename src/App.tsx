@@ -10,6 +10,7 @@ import FullTest from "./pages/FullTest";
 import TestModeSelector from "./pages/TestModeSelector";
 import Diagnostics from "./pages/Diagnostics";
 import NotFound from "./pages/NotFound";
+import ImportQuestions from "./pages/ImportQuestions";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/full-test" element={<FullTest />} />
           <Route path="/diagnostics" element={<Diagnostics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/import" element={<ImportQuestions />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

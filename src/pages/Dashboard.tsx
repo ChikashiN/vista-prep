@@ -11,44 +11,28 @@ import { Progress } from "@/components/ui/progress";
 import { BookOpen, Calculator, Target, Users, Trophy, TrendingUp, Play, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useTestData } from "@/hooks/useTestData";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [dailyChallengeCompleted, setDailyChallengeCompleted] = useState(false);
+  const { getUserData, getNextLevelXP, getRecentScores, getDomainAccuracy } = useTestData();
   
-  // Mock user data
-  const userData = {
-    name: "Alex",
-    level: 5,
-    currentXP: 1250,
-    nextLevelXP: 1500,
-    totalXP: 1250,
-    streak: 7,
-    badge: "SAT Warrior"
-  };
-
-  const recentActivity = [
-    { section: "Reading & Writing", score: "18/27", accuracy: 67, date: "Today" },
-    { section: "Math", score: "16/22", accuracy: 73, date: "Yesterday" },
-    { section: "Reading & Writing", score: "22/27", accuracy: 81, date: "2 days ago" }
-  ];
-
-  const domainStats = [
-    { domain: "Craft & Structure", accuracy: 78, improvement: "+5%" },
-    { domain: "Information & Ideas", accuracy: 85, improvement: "+2%" },
-    { domain: "Algebra", accuracy: 72, improvement: "+8%" },
-    { domain: "Advanced Math", accuracy: 69, improvement: "+3%" }
-  ];
+  // Get real user data from the hook
+  const userData = getUserData();
+  const nextLevelXP = getNextLevelXP();
+  const recentActivity = getRecentScores(3);
+  const domainStats = getDomainAccuracy();
 
   const leaderboard = [
     { rank: 1, name: "MathWhiz2024", xp: 2450 },
     { rank: 2, name: "ReadingPro", xp: 2210 },
     { rank: 3, name: "SATMaster", xp: 1890 },
     { rank: 4, name: "StudyBeast", xp: 1650 },
-    { rank: 5, name: "Alex (You)", xp: 1250 }
+    { rank: 5, name: `${userData.name} (You)`, xp: userData.totalXP }
   ];
 
-  const xpProgress = (userData.currentXP / userData.nextLevelXP) * 100;
+  const xpProgress = (userData.currentXP / 500) * 100; // 500 XP per level
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,7 +69,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Badge variant="secondary" className="text-lg px-3 py-1">
-                    {userData.currentXP} XP
+                    {userData.totalXP} XP
                   </Badge>
                 </div>
               </CardHeader>
@@ -93,11 +77,11 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Progress to Level {userData.level + 1}</span>
-                    <span>{userData.currentXP}/{userData.nextLevelXP} XP</span>
+                    <span>{userData.currentXP}/500 XP</span>
                   </div>
                   <Progress value={xpProgress} className="h-3" />
                   <p className="text-xs text-muted-foreground">
-                    {userData.nextLevelXP - userData.currentXP} XP until next level!
+                    {500 - userData.currentXP} XP until next level!
                   </p>
                 </div>
               </CardContent>
@@ -144,25 +128,30 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          activity.section.includes('Reading') ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
-                        }`}>
-                          {activity.section.includes('Reading') ? <BookOpen className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}
+                  {recentActivity.length > 0 ? (
+                    recentActivity.map((activity, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
+                            <BookOpen className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Full SAT Test</p>
+                            <p className="text-sm text-muted-foreground">{activity.date}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{activity.section}</p>
-                          <p className="text-sm text-muted-foreground">{activity.date}</p>
+                        <div className="text-right">
+                          <p className="font-medium">{activity.totalScore}</p>
+                          <p className="text-sm text-muted-foreground">Total Score</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">{activity.score}</p>
-                        <p className="text-sm text-muted-foreground">{activity.accuracy}% correct</p>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No recent activity yet</p>
+                      <p className="text-sm">Start practicing to see your progress!</p>
                     </div>
-                  ))}
+                  )}
                 </div>
                 <Button variant="outline" className="w-full mt-4" onClick={() => navigate('/practice')}>
                   <Play className="h-4 w-4 mr-2" />
@@ -178,18 +167,24 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {domainStats.map((stat, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{stat.domain}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-green-600">{stat.improvement}</span>
-                          <span className="font-medium">{stat.accuracy}%</span>
+                  {domainStats.length > 0 ? (
+                    domainStats.slice(0, 4).map((stat, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{stat.domain}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-green-600">{stat.improvement}</span>
+                            <span className="font-medium">{stat.accuracy}%</span>
+                          </div>
                         </div>
+                        <Progress value={stat.accuracy} className="h-2" />
                       </div>
-                      <Progress value={stat.accuracy} className="h-2" />
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p>Complete practice sessions to see domain accuracy</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -251,12 +246,12 @@ export default function Dashboard() {
                   <div className="text-sm text-muted-foreground">Day Streak</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-secondary">87</div>
-                  <div className="text-sm text-muted-foreground">Questions Completed</div>
+                  <div className="text-2xl font-bold text-secondary">{userData.totalXP}</div>
+                  <div className="text-sm text-muted-foreground">Total XP Earned</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-accent">76%</div>
-                  <div className="text-sm text-muted-foreground">Overall Accuracy</div>
+                  <div className="text-2xl font-bold text-accent">{userData.badge}</div>
+                  <div className="text-sm text-muted-foreground">Current Badge</div>
                 </div>
               </CardContent>
             </Card>
