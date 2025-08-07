@@ -95,6 +95,15 @@ export function useTestData() {
       } catch (error) {
         console.error('Error loading test data:', error);
       }
+    }
+    
+    if (storedUserData) {
+      try {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
     } else {
       // Add some sample data for demonstration
       const sampleData = [
@@ -375,9 +384,18 @@ export function useTestData() {
     return { strongest, weakest };
   };
 
+  // Function to manually add XP for testing
+  const addXP = (amount: number) => {
+    setUserData(prev => ({
+      ...prev,
+      ...updateUserLevel(prev.totalXP + amount)
+    }));
+  };
+
   return {
     testResults,
     addTestResult,
+    addXP, // Add this for testing
     getRecentScores,
     getWeeklyData,
     getOverallAccuracy,

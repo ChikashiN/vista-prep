@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Timer, Flag, ChevronLeft, ChevronRight, Calculator, BookOpen, Save, Eye, PauseCircle, Menu, FileText, Pause, Square } from "lucide-react";
 import { useTestData } from "@/hooks/useTestData";
+import { toast } from "sonner";
 
 interface Question {
   id: number;
@@ -690,7 +691,7 @@ export default function FullTest() {
                   variant="outline" 
                   onClick={() => {
                     // Add test result to tracking data before navigating
-                    addTestResult({
+                    const xpEarned = addTestResult({
                       date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
                       type: 'full',
                       section: 'both',
@@ -703,6 +704,11 @@ export default function FullTest() {
                       },
                       timeSpent: 7200 // 2 hours for full test (approx)
                     });
+                    
+                    toast.success(`Full Test Complete! You earned ${xpEarned} XP!`, {
+                      description: `Score: ${totalScore}/1600`
+                    });
+                    
                     navigate('/practice');
                   }}
                   className="rounded-xl"
@@ -713,7 +719,7 @@ export default function FullTest() {
                   variant="default" 
                   onClick={() => {
                     // Add test result to tracking data before navigating
-                    addTestResult({
+                    const xpEarned = addTestResult({
                       date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
                       type: 'full',
                       section: 'both',
@@ -726,6 +732,11 @@ export default function FullTest() {
                       },
                       timeSpent: 7200 // 2 hours for full test (approx)
                     });
+                    
+                    toast.success(`Full Test Complete! You earned ${xpEarned} XP!`, {
+                      description: `Score: ${totalScore}/1600`
+                    });
+                    
                      navigate('/diagnostics', { 
                        state: { 
                          questions: sampleQuestions.map((q, index) => ({

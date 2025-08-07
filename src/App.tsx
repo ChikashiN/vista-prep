@@ -11,6 +11,9 @@ import TestModeSelector from "./pages/TestModeSelector";
 import Diagnostics from "./pages/Diagnostics";
 import NotFound from "./pages/NotFound";
 import ImportQuestions from "./pages/ImportQuestions";
+import Payment from "./pages/payment";
+import Auth from "./pages/Auth";
+import Welcome from "./pages/Welcome";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +24,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Auth />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/welcome" element={<Welcome />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/practice" element={<SectionalPractice />} />
           <Route path="/practice/:section" element={<Practice />} />
@@ -30,6 +35,7 @@ const App = () => (
           <Route path="/diagnostics" element={<Diagnostics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="/import" element={<ImportQuestions />} />
+          <Route path="/payment" element={<Payment />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, Flame, Trophy, Home } from "lucide-react";
+import { Target, Flame, Trophy, Home, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { XPTracker } from "./XPTracker";
+import { toast } from "sonner";
 
 interface HeaderProps {
   streak?: number;
@@ -22,7 +23,7 @@ export function Header({ streak = 0, totalScore = 0, currentXP = 250, level = 3 
         <div className="flex items-center gap-6">
           <div 
             className="flex items-center gap-3 cursor-pointer"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
           >
             <div className="rounded-xl bg-white p-2 shadow-soft">
               <img 
@@ -91,9 +92,18 @@ export function Header({ streak = 0, totalScore = 0, currentXP = 250, level = 3 
             </Badge>
           </div>
 
-          {/* Sign Up Button */}
-          <Button variant="default" className="rounded-xl">
-            Sign Up Free
+          {/* Logout Button */}
+          <Button 
+            variant="outline" 
+            className="rounded-xl"
+            onClick={() => {
+              localStorage.removeItem('currentUser');
+              toast.success('Logged out successfully');
+              navigate('/auth');
+            }}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
           </Button>
         </div>
       </div>

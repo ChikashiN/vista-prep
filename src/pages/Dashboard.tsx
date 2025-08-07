@@ -8,15 +8,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, Calculator, Target, Users, Trophy, TrendingUp, Play, Zap } from "lucide-react";
+import { BookOpen, Calculator, Target, Users, Trophy, TrendingUp, Play, Zap, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTestData } from "@/hooks/useTestData";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [dailyChallengeCompleted, setDailyChallengeCompleted] = useState(false);
-  const { getUserData, getNextLevelXP, getRecentScores, getDomainAccuracy } = useTestData();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { getUserData, getNextLevelXP, getRecentScores, getDomainAccuracy, addXP, addTestResult } = useTestData();
+  
+  // Check authentication
+  useEffect(() => {
+    const user = localStorage.getItem('currentUser');
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    try {
+      const userData = JSON.parse(user);
+      setCurrentUser(userData);
+    } catch (error) {
+      localStorage.removeItem('currentUser');
+      navigate('/auth');
+    }
+  }, [navigate]);
   
   // Get real user data from the hook
   const userData = getUserData();
@@ -47,7 +66,7 @@ export default function Dashboard() {
         {/* Welcome Header */}
         <div className="text-center space-y-4 mb-12">
           <h1 className="text-4xl md:text-5xl font-bold">
-            Hi, <span className="bg-gradient-hero bg-clip-text text-transparent">{userData.name}</span>! 👋
+            Hi, <span className="bg-gradient-hero bg-clip-text text-transparent">{currentUser?.name || userData.name}</span>! 👋
           </h1>
           <p className="text-lg text-muted-foreground">Ready to conquer the SAT today?</p>
         </div>
@@ -83,12 +102,60 @@ export default function Dashboard() {
                   <p className="text-xs text-muted-foreground">
                     {500 - userData.currentXP} XP until next level!
                   </p>
+                  {/* Test buttons - remove these after testing */}
+                  <div className="space-y-2 mt-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => addXP(100)}
+                      className="w-full"
+                    >
+                      Test: Add 100 XP
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        // Simulate completing a practice session
+                        addTestResult({
+                          date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+                          type: 'sectional',
+                          section: 'reading',
+                          domain: 'information-ideas',
+                          totalQuestions: 10,
+                          correctAnswers: 8,
+                          timeSpent: 600
+                        });
+                      }}
+                      className="w-full"
+                    >
+                      Test: Complete Practice (8/10)
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        // Simulate completing a full test
+                        addTestResult({
+                          date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
+                          type: 'full',
+                          section: 'both',
+                          totalQuestions: 54,
+                          correctAnswers: 45,
+                          timeSpent: 7200
+                        });
+                      }}
+                      className="w-full"
+                    >
+                      Test: Complete Full Test (45/54)
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="hover:shadow-soft transition-all cursor-pointer group" onClick={() => navigate('/practice')}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
@@ -112,6 +179,20 @@ export default function Dashboard() {
                     <div>
                       <h3 className="font-semibold">Take Full Test</h3>
                       <p className="text-sm text-muted-foreground">Full SAT simulation</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-soft transition-all cursor-pointer group" onClick={() => navigate('/payment')}>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                      <Crown className="h-6 w-6 text-green-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Upgrade Plan</h3>
+                      <p className="text-sm text-muted-foreground">Unlock premium features</p>
                     </div>
                   </div>
                 </CardContent>

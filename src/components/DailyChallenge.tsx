@@ -101,8 +101,8 @@ export function DailyChallenge({ isCompleted, onStart }: DailyChallengeProps) {
   const handleFinish = () => {
     const score = calculateScore();
     
-    // Track the test result
-    addTestResult({
+    // Track the test result and get XP earned
+    const xpEarned = addTestResult({
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' }),
       type: 'daily',
       section: 'both',
@@ -112,7 +112,7 @@ export function DailyChallenge({ isCompleted, onStart }: DailyChallengeProps) {
       timeSpent: 300 // Estimated 5 minutes
     });
 
-    toast.success(`Daily Challenge Complete! You scored ${score}/5 questions correctly and earned ${score * 10} XP!`);
+    toast.success(`Daily Challenge Complete! You scored ${score}/5 questions correctly and earned ${xpEarned} XP!`);
     
     setIsActive(false);
     setShowResults(false);

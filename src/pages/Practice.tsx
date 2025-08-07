@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Timer, Flag, ChevronLeft, ChevronRight, RotateCcw, MessageCircle, Calculator, FileText, Trophy } from "lucide-react";
 import { useTestData } from "@/hooks/useTestData";
+import { toast } from "sonner";
 
 interface Question {
   id: number;
@@ -163,6 +164,11 @@ export default function Practice() {
       timeSpent: timeElapsed
     });
 
+    // Show XP notification
+    toast.success(`Practice Complete! You earned ${xpEarned} XP!`, {
+      description: `${correctAnswers}/${questionCount} questions correct`
+    });
+
     setIsCompleted(true);
   };
 
@@ -177,7 +183,7 @@ export default function Practice() {
     }).length;
     const percentage = Math.round((score / questionCount) * 100);
 
-    // Calculate XP breakdown
+    // Calculate XP breakdown (this should match the useTestData calculation)
     const baseXP = questionCount * 10; // +10 XP per answered question
     const correctBonus = score * 5; // +5 XP per correct answer
     const completionBonus = 50; // +50 XP for finishing practice set
