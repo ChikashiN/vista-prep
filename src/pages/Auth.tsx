@@ -15,6 +15,7 @@ interface User {
   phone: string;
   password: string;
   createdAt: string;
+  hasPaid?: boolean;
 }
 
 export default function Auth() {
@@ -38,7 +39,29 @@ export default function Auth() {
   useEffect(() => {
     const currentUser = localStorage.getItem('currentUser');
     if (currentUser) {
-      navigate('/welcome');
+      try {
+        const user = JSON.parse(currentUser);
+        
+        // Verify user exists in users array and check payment status
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const verifiedUser = users.find((u: User) => u.id === user.id);
+        
+        if (verifiedUser) {
+          if (verifiedUser.hasPaid) {
+            navigate('/welcome');
+          } else {
+            navigate('/payment');
+          }
+        } else {
+          // User not found in users array, clear and redirect to auth
+          localStorage.removeItem('currentUser');
+          navigate('/auth');
+        }
+      } catch (error) {
+        // Invalid user data, clear and redirect to auth
+        localStorage.removeItem('currentUser');
+        navigate('/auth');
+      }
     }
   }, [navigate]);
 
@@ -100,14 +123,15 @@ export default function Auth() {
         return;
       }
 
-      // Create new user
+      // Create new user (hasPaid: false initially)
       const newUser: User = {
         id: Date.now().toString(),
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         password: formData.password, // In real app, hash this
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        hasPaid: false
       };
 
       // Save user
@@ -117,8 +141,8 @@ export default function Auth() {
       // Log in the user
       localStorage.setItem('currentUser', JSON.stringify(newUser));
       
-      toast.success('Account created successfully!');
-      navigate('/welcome');
+      toast.success('Account created! Please complete payment to continue.');
+      navigate('/payment');
     } catch (error) {
       setError('Failed to create account. Please try again.');
     } finally {
@@ -144,8 +168,14 @@ export default function Auth() {
       // Log in the user
       localStorage.setItem('currentUser', JSON.stringify(user));
       
-      toast.success('Welcome back!');
-      navigate('/welcome');
+      // Check if user has paid
+      if (user.hasPaid) {
+        toast.success('Welcome back!');
+        navigate('/welcome');
+      } else {
+        toast.info('Please complete payment to access your dashboard.');
+        navigate('/payment');
+      }
     } catch (error) {
       setError('Failed to log in. Please try again.');
     } finally {

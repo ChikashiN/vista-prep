@@ -18,6 +18,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [dailyChallengeCompleted, setDailyChallengeCompleted] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
   const { getUserData, getNextLevelXP, getRecentScores, getDomainAccuracy, addXP, addTestResult } = useTestData();
   
   // Check authentication
@@ -30,7 +31,33 @@ export default function Dashboard() {
     
     try {
       const userData = JSON.parse(user);
-      setCurrentUser(userData);
+      
+      // Verify user exists in users array and check payment status
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const verifiedUser = users.find((u: any) => u.id === userData.id);
+      
+      if (!verifiedUser) {
+        // User not found in users array, clear and redirect to auth
+        localStorage.removeItem('currentUser');
+        navigate('/auth');
+        return;
+      }
+      
+      // Check if user has paid
+      if (!verifiedUser.hasPaid) {
+        // User hasn't paid, redirect to payment
+        navigate('/payment');
+        return;
+      }
+      
+      setCurrentUser(verifiedUser);
+      
+      // Check if user just paid (hasPaid is true but no welcome shown yet)
+      if (verifiedUser.hasPaid && !localStorage.getItem('welcomeShown')) {
+        setShowWelcomeMessage(true);
+        localStorage.setItem('welcomeShown', 'true');
+        toast.success(`Welcome to Infiniprep, ${verifiedUser.name}! 🎉`);
+      }
     } catch (error) {
       localStorage.removeItem('currentUser');
       navigate('/auth');
@@ -63,6 +90,34 @@ export default function Dashboard() {
       />
       
       <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Welcome Banner for New Users */}
+        {showWelcomeMessage && (
+          <Card className="mb-8 border-green-200 bg-green-50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
+                  <Crown className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-green-800">
+                    Welcome to Infiniprep! 🎉
+                  </h3>
+                  <p className="text-green-700">
+                    You now have lifetime access to all features. Start your SAT prep journey today!
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowWelcomeMessage(false)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Welcome Header */}
         <div className="text-center space-y-4 mb-12">
           <h1 className="text-4xl md:text-5xl font-bold">
@@ -184,15 +239,15 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-soft transition-all cursor-pointer group" onClick={() => navigate('/payment')}>
+              <Card className="hover:shadow-soft transition-all cursor-pointer group" onClick={() => navigate('/diagnostics')}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
-                      <Crown className="h-6 w-6 text-green-500" />
+                    <div className="h-12 w-12 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
+                      <Target className="h-6 w-6 text-purple-500" />
                     </div>
                     <div>
-                      <h3 className="font-semibold">Upgrade Plan</h3>
-                      <p className="text-sm text-muted-foreground">Unlock premium features</p>
+                      <h3 className="font-semibold">View Diagnostics</h3>
+                      <p className="text-sm text-muted-foreground">Track your progress</p>
                     </div>
                   </div>
                 </CardContent>

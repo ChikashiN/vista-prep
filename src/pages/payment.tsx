@@ -1,82 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Star, Zap, Crown, Shield, Users, Target, BookOpen, Calculator, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PLANS } from '@/lib/stripe';
+import { toast } from 'sonner';
 
 interface PricingTier {
   id: string;
   name: string;
-  price: number;
+  price: string;
   period: string;
   description: string;
   features: string[];
   popular?: boolean;
   icon: React.ReactNode;
   color: string;
+  paymentLink: string;
 }
 
 export default function Payment() {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const user = localStorage.getItem('currentUser');
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    try {
+      const userData = JSON.parse(user);
+      
+      // Verify user exists in users array and check payment status
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const verifiedUser = users.find((u: any) => u.id === userData.id);
+      
+      if (!verifiedUser) {
+        // User not found in users array, clear and redirect to auth
+        localStorage.removeItem('currentUser');
+        navigate('/auth');
+        return;
+      }
+      
+      setCurrentUser(verifiedUser);
+      
+      // If user has already paid, redirect to dashboard
+      if (verifiedUser.hasPaid) {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      navigate('/auth');
+    }
+  }, [navigate]);
 
   const pricingTiers: PricingTier[] = [
     {
-      id: 'basic',
-      name: 'Basic',
-      price: 9.99,
-      period: 'month',
-      description: 'Perfect for getting started with SAT prep',
-      icon: <Target className="h-6 w-6" />,
-      color: 'bg-blue-500',
-      features: [
-        'Access to 500+ practice questions',
-        'Basic progress tracking',
-        'Sectional practice mode',
-        'Mobile-friendly interface',
-        'Email support'
-      ]
-    },
-    {
-      id: 'pro',
-      name: 'Pro',
-      price: 19.99,
-      period: 'month',
-      description: 'Most popular choice for serious students',
-      icon: <Zap className="h-6 w-6" />,
-      color: 'bg-purple-500',
-      popular: true,
-      features: [
-        'Everything in Basic',
-        'Access to 2000+ questions',
-        'Full practice tests with adaptive difficulty',
-        'Detailed analytics and insights',
-        'AI-powered tutoring assistance',
-        'Priority email support',
-        'Progress reports and recommendations'
-      ]
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 29.99,
-      period: 'month',
-      description: 'Complete SAT preparation experience',
+      id: 'lifetime',
+      name: PLANS.BASIC.name,
+      price: PLANS.BASIC.price,
+      period: 'one-time',
+      description: 'Lifetime access to all Infiniprep features',
       icon: <Crown className="h-6 w-6" />,
       color: 'bg-yellow-500',
-      features: [
-        'Everything in Pro',
-        'Access to 5000+ questions',
-        '1-on-1 tutoring sessions',
-        'Custom study plans',
-        'Advanced analytics dashboard',
-        'Phone and email support',
-        'Guaranteed score improvement or money back',
-        'Exclusive premium content'
-      ]
+      popular: true,
+      paymentLink: PLANS.BASIC.paymentLink,
+      features: PLANS.BASIC.features
     }
   ];
 
@@ -89,79 +84,97 @@ export default function Payment() {
     
     setLoading(true);
     
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      const selectedTier = pricingTiers.find(t => t.id === selectedPlan);
+      if (selectedTier) {
+        // Redirect to Stripe payment link
+        window.open(selectedTier.paymentLink, '_blank');
+        
+        // Simulate payment success (in real app, you'd handle webhook)
+        setTimeout(() => {
+          // Update user payment status
+          const users = JSON.parse(localStorage.getItem('users') || '[]');
+          const updatedUsers = users.map((user: any) => {
+            if (user.id === currentUser.id) {
+              return { ...user, hasPaid: true };
+            }
+            return user;
+          });
+          localStorage.setItem('users', JSON.stringify(updatedUsers));
+          
+          // Update current user
+          const updatedUser = { ...currentUser, hasPaid: true };
+          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+          
+          setLoading(false);
+          toast.success('Payment successful! Welcome to Infiniprep!');
+          navigate('/dashboard');
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
       setLoading(false);
-      // Here you would integrate with Stripe
-      alert('Payment integration coming soon! This would connect to Stripe.');
-      // navigate('/dashboard');
-    }, 2000);
+      toast.error('We are sorry!Payment failed. Please try again.');
+    }
   };
+
+  if (!currentUser) {
+    return null; // Loading state
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <Header streak={5} totalScore={1250} currentXP={250} level={3} />
+      <Header streak={0} totalScore={0} currentXP={0} level={1} />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="text-center space-y-6 mb-12">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-            Choose Your Plan
+            Welcome, {currentUser.name}! 👋
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Unlock your full potential with our comprehensive SAT preparation platform. 
-            Choose the plan that fits your goals and budget.
+            Complete your payment to unlock lifetime access to all Infiniprep features. 
+            No monthly fees, no recurring charges.
           </p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {pricingTiers.map((tier) => (
-            <Card 
-              key={tier.id}
-              className={`relative transition-all duration-300 hover:shadow-lg ${
-                selectedPlan === tier.id 
-                  ? 'ring-2 ring-primary shadow-lg' 
-                  : 'hover:scale-105'
-              } ${tier.popular ? 'border-primary/50' : ''}`}
-            >
-              {tier.popular && (
-                <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
-                  Most Popular
-                </Badge>
-              )}
+        {/* Pricing Card */}
+        <div className="flex justify-center mb-12">
+          <Card className="relative transition-all duration-300 hover:shadow-lg max-w-md w-full">
+            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground">
+              Best Value
+            </Badge>
+            
+            <CardHeader className="text-center pb-4">
+              <div className="w-12 h-12 rounded-lg bg-yellow-500 flex items-center justify-center mx-auto mb-4">
+                <Crown className="h-6 w-6" />
+              </div>
+              <CardTitle className="text-2xl">{pricingTiers[0].name}</CardTitle>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-4xl font-bold">{pricingTiers[0].price}</span>
+                <span className="text-muted-foreground">/{pricingTiers[0].period}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">{pricingTiers[0].description}</p>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              <ul className="space-y-3">
+                {pricingTiers[0].features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
               
-              <CardHeader className="text-center pb-4">
-                <div className={`w-12 h-12 rounded-lg ${tier.color} flex items-center justify-center mx-auto mb-4`}>
-                  {tier.icon}
-                </div>
-                <CardTitle className="text-2xl">{tier.name}</CardTitle>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold">${tier.price}</span>
-                  <span className="text-muted-foreground">/{tier.period}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{tier.description}</p>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <ul className="space-y-3">
-                  {tier.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <Button 
-                  className={`w-full ${selectedPlan === tier.id ? 'bg-primary' : 'bg-secondary hover:bg-secondary/80'}`}
-                  onClick={() => handlePlanSelect(tier.id)}
-                >
-                  {selectedPlan === tier.id ? 'Selected' : 'Select Plan'}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={() => handlePlanSelect('lifetime')}
+              >
+                {selectedPlan === 'lifetime' ? 'Selected' : 'Get Lifetime Access'}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Payment Section */}
@@ -174,8 +187,7 @@ export default function Payment() {
               <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
                 <span className="font-medium">Selected Plan:</span>
                 <span className="font-bold">
-                  {pricingTiers.find(t => t.id === selectedPlan)?.name} - 
-                  ${pricingTiers.find(t => t.id === selectedPlan)?.price}/{pricingTiers.find(t => t.id === selectedPlan)?.period}
+                  {pricingTiers[0].name} - {pricingTiers[0].price}
                 </span>
               </div>
               
@@ -186,7 +198,7 @@ export default function Payment() {
                   className="w-full"
                   size="lg"
                 >
-                  {loading ? 'Processing...' : 'Pay Now'}
+                  {loading ? 'Processing Payment...' : 'Pay with Stripe'}
                 </Button>
                 
                 <Button 
@@ -250,28 +262,19 @@ export default function Payment() {
           <div className="max-w-3xl mx-auto space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Can I cancel my subscription anytime?</CardTitle>
+                <CardTitle className="text-lg">What does lifetime access include?</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your current billing period.</p>
+                <p className="text-muted-foreground">Lifetime access includes unlimited access to all practice questions, full practice tests, progress tracking, and all future updates to the platform.</p>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Is there a free trial?</CardTitle>
+                <CardTitle className="text-lg">Is this a one-time payment?</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Yes! We offer a 7-day free trial for all plans. No credit card required to start.</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">What if I'm not satisfied?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">We offer a 30-day money-back guarantee. If you're not satisfied, we'll refund your payment.</p>
+                <p className="text-muted-foreground">Yes! This is a one-time payment of $22.99. No monthly fees, no recurring charges, no hidden costs. We also offer a 48 hour free trial!</p>
               </CardContent>
             </Card>
           </div>
