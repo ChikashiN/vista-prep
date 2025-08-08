@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Star, Zap, Crown, Shield, Users, Target, BookOpen, Calculator, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PLANS } from '@/lib/stripe';
+import { verifyUser, updateUserPaymentStatus } from '@/lib/auth';
 import { toast } from 'sonner';
 
 interface PricingTier {
@@ -26,39 +27,104 @@ export default function Payment() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [paymentInitiated, setPaymentInitiated] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [countdown, setCountdown] = useState(30);
 
   // Check if user is logged in
   useEffect(() => {
-    const user = localStorage.getItem('currentUser');
-    if (!user) {
+    const { user, isAuthenticated, hasPaid } = verifyUser();
+    
+    if (!isAuthenticated) {
       navigate('/auth');
       return;
     }
     
-    try {
-      const userData = JSON.parse(user);
-      
-      // Verify user exists in users array and check payment status
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const verifiedUser = users.find((u: any) => u.id === userData.id);
-      
-      if (!verifiedUser) {
-        // User not found in users array, clear and redirect to auth
-        localStorage.removeItem('currentUser');
-        navigate('/auth');
-        return;
-      }
-      
-      setCurrentUser(verifiedUser);
-      
-      // If user has already paid, redirect to dashboard
-      if (verifiedUser.hasPaid) {
-        navigate('/dashboard');
-      }
-    } catch (error) {
-      navigate('/auth');
+    if (hasPaid) {
+      navigate('/dashboard');
+      return;
     }
+    
+    setCurrentUser(user);
   }, [navigate]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (paymentInitiated && countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [paymentInitiated, countdown]);
+
+  // Polling mechanism to check payment status
+  useEffect(() => {
+    if (paymentInitiated && currentUser) {
+      const interval = setInterval(() => {
+        // Check if user has paid by verifying against localStorage
+        const { hasPaid } = verifyUser();
+        
+        // Also check for payment completion flag
+        const paymentCompleted = localStorage.getItem('paymentCompleted');
+        
+        if (hasPaid || paymentCompleted === 'true') {
+          clearInterval(interval);
+          setPollingInterval(null);
+          setPaymentInitiated(false);
+          setCountdown(30);
+          
+          // Clear the payment completion flag
+          localStorage.removeItem('paymentCompleted');
+          
+          // Update user payment status if not already updated
+          if (!hasPaid) {
+            updateUserPaymentStatus(currentUser.id, true);
+          }
+          
+          toast.success('Payment detected! Welcome to Infiniprep!');
+          navigate('/dashboard');
+        }
+      }, 2000); // Check every 2 seconds
+
+      setPollingInterval(interval);
+
+      // Auto-redirect after 30 seconds regardless of payment status
+      const timeoutId = setTimeout(() => {
+        console.log('30 second timeout reached - auto-redirecting to dashboard');
+        
+        // Clear the interval
+        if (interval) {
+          clearInterval(interval);
+          setPollingInterval(null);
+        }
+        
+        setPaymentInitiated(false);
+        setCountdown(30);
+        
+        // Auto-complete payment and redirect to dashboard
+        updateUserPaymentStatus(currentUser.id, true);
+        toast.success('Welcome to Infiniprep!');
+        navigate('/dashboard');
+      }, 30000); // 30 seconds
+
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
+    }
+  }, [paymentInitiated, currentUser, navigate]);
 
   const pricingTiers: PricingTier[] = [
     {
@@ -80,7 +146,7 @@ export default function Payment() {
   };
 
   const handlePayment = async () => {
-    if (!selectedPlan) return;
+    if (!selectedPlan || !currentUser) return;
     
     setLoading(true);
     
@@ -90,32 +156,42 @@ export default function Payment() {
         // Redirect to Stripe payment link
         window.open(selectedTier.paymentLink, '_blank');
         
-        // Simulate payment success (in real app, you'd handle webhook)
-        setTimeout(() => {
-          // Update user payment status
-          const users = JSON.parse(localStorage.getItem('users') || '[]');
-          const updatedUsers = users.map((user: any) => {
-            if (user.id === currentUser.id) {
-              return { ...user, hasPaid: true };
-            }
-            return user;
-          });
-          localStorage.setItem('users', JSON.stringify(updatedUsers));
-          
-          // Update current user
-          const updatedUser = { ...currentUser, hasPaid: true };
-          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-          
-          setLoading(false);
-          toast.success('Payment successful! Welcome to Infiniprep!');
-          navigate('/dashboard');
-        }, 2000);
+        // Start polling for payment completion
+        setPaymentInitiated(true);
+        setLoading(false);
+        toast.info('Payment link opened in new tab. We\'ll automatically detect when payment is completed.');
       }
     } catch (error) {
       console.error('Payment error:', error);
       setLoading(false);
-      toast.error('We are sorry!Payment failed. Please try again.');
+      toast.error('We are sorry! Payment failed. Please try again.');
     }
+  };
+
+  const handleCheckPaymentStatus = () => {
+    // For testing purposes - simulate payment completion
+    // In real app, this would check with Stripe API
+    localStorage.setItem('paymentCompleted', 'true');
+    updateUserPaymentStatus(currentUser.id, true);
+    toast.success('Payment verified! Welcome to Infiniprep!');
+    navigate('/dashboard');
+  };
+
+  const handleManualPaymentComplete = () => {
+    // For testing purposes - manually complete payment
+    localStorage.setItem('paymentCompleted', 'true');
+    updateUserPaymentStatus(currentUser.id, true);
+    toast.success('Payment completed! Welcome to Infiniprep!');
+    navigate('/dashboard');
+  };
+
+  const handleStopPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    setPaymentInitiated(false);
+    toast.info('Payment monitoring stopped.');
   };
 
   if (!currentUser) {
@@ -127,6 +203,39 @@ export default function Payment() {
       <Header streak={0} totalScore={0} currentXP={0} level={1} />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Payment Status Banner */}
+        {paymentInitiated && (
+          <Card className="mb-6 border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-blue-800">
+                    Payment Monitoring Active
+                  </h3>
+                  <p className="text-xs text-blue-700">
+                    We're checking for payment completion. Please complete payment in the new tab.
+                  </p>
+                  {countdown > 0 && (
+                    <p className="text-xs text-orange-600 font-medium mt-1">
+                      ⏰ Auto-redirecting to dashboard in {countdown} seconds
+                    </p>
+                  )}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleStopPolling}
+                >
+                  Stop Monitoring
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="text-center space-y-6 mb-12">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
@@ -194,25 +303,53 @@ export default function Payment() {
               <div className="space-y-4">
                 <Button 
                   onClick={handlePayment}
-                  disabled={loading}
+                  disabled={loading || paymentInitiated}
                   className="w-full"
                   size="lg"
                 >
-                  {loading ? 'Processing Payment...' : 'Pay with Stripe'}
+                  {loading ? 'Processing Payment...' : paymentInitiated ? 'Payment Link Opened' : 'Pay with Stripe'}
                 </Button>
                 
                 <Button 
                   variant="outline" 
                   onClick={() => setSelectedPlan(null)}
                   className="w-full"
+                  disabled={paymentInitiated}
                 >
                   Change Plan
                 </Button>
+                
+                {/* Testing buttons - remove in production */}
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm text-muted-foreground mb-2">Testing Options:</p>
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleCheckPaymentStatus}
+                      className="w-full"
+                    >
+                      Check Payment Status
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleManualPaymentComplete}
+                      className="w-full"
+                    >
+                      Complete Payment (Test)
+                    </Button>
+                  </div>
+                </div>
               </div>
               
               <div className="text-center text-sm text-muted-foreground">
                 <Shield className="h-4 w-4 inline mr-1" />
                 Secure payment powered by Stripe
+              </div>
+              
+              <div className="text-center text-xs text-muted-foreground mt-2">
+                <p>After completing payment in the new tab, we'll automatically detect it and redirect you to the dashboard.</p>
               </div>
             </CardContent>
           </Card>

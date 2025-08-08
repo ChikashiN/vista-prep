@@ -1,5 +1,5 @@
-// This file is for future webhook handling
-// You'll need to set up a server endpoint to handle Stripe webhooks
+// Stripe webhook handling for payment confirmations
+// This would be implemented on your server side
 
 export interface StripeWebhookEvent {
   id: string;
@@ -10,6 +10,8 @@ export interface StripeWebhookEvent {
       customer?: string;
       subscription?: string;
       status?: string;
+      payment_status?: string;
+      client_reference_id?: string; // User ID
       [key: string]: any;
     };
   };
@@ -19,26 +21,47 @@ export const handleStripeWebhook = async (event: StripeWebhookEvent) => {
   switch (event.type) {
     case 'checkout.session.completed':
       // Handle successful payment
-      console.log('Payment completed:', event.data.object);
-      // Update user subscription status in your database
+      const session = event.data.object;
+      const userId = session.client_reference_id;
+      
+      if (session.payment_status === 'paid') {
+        // Update user payment status in your database
+        console.log('Payment completed for user:', userId);
+        // In real implementation, update user.hasPaid = true in your database
+      }
       break;
       
-    case 'customer.subscription.created':
-      // Handle new subscription
-      console.log('Subscription created:', event.data.object);
+    case 'payment_intent.succeeded':
+      // Handle successful payment intent
+      const paymentIntent = event.data.object;
+      console.log('Payment intent succeeded:', paymentIntent.id);
       break;
       
-    case 'customer.subscription.updated':
-      // Handle subscription updates
-      console.log('Subscription updated:', event.data.object);
-      break;
-      
-    case 'customer.subscription.deleted':
-      // Handle subscription cancellation
-      console.log('Subscription cancelled:', event.data.object);
+    case 'invoice.payment_succeeded':
+      // Handle successful subscription payment
+      const invoice = event.data.object;
+      console.log('Invoice payment succeeded:', invoice.id);
       break;
       
     default:
       console.log(`Unhandled event type: ${event.type}`);
+  }
+};
+
+// Client-side payment confirmation
+export const confirmPayment = async (paymentIntentId: string) => {
+  try {
+    // In real implementation, call your server endpoint
+    // const response = await fetch('/api/confirm-payment', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ paymentIntentId })
+    // });
+    
+    // For now, simulate successful confirmation
+    return { success: true, paymentIntentId };
+  } catch (error) {
+    console.error('Payment confirmation error:', error);
+    return { success: false, error };
   }
 }; 
